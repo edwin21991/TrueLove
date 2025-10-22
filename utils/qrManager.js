@@ -7,7 +7,6 @@ import {
   getDocs,
   updateDoc,
   doc,
-  deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import * as FileSystem from "expo-file-system";
@@ -77,7 +76,6 @@ export async function assignQR(entityType, entityId) {
 
 /* ============================================================================
    🔹 Liberar un QR cuando se elimina un grupo o sección
-   - Lo marca como disponible y elimina las referencias.
 ============================================================================ */
 export async function releaseQR(entityId) {
   try {
@@ -101,7 +99,8 @@ export async function releaseQR(entityId) {
 
 /* ============================================================================
    🔹 Cambiar QR manualmente
-   - Libera el actual y asigna uno nuevo (si no hay libres, crea uno).
+   - Libera el actual y asigna uno nuevo.
+   - Si no hay libres, crea uno nuevo automáticamente.
 ============================================================================ */
 export async function changeQR(entityType, entityId) {
   try {

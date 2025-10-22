@@ -1,3 +1,4 @@
+// components/FieldCreator/NumeroDineroOptions.jsx
 import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { Picker } from "@react-native-picker/picker";
@@ -17,6 +18,7 @@ export default function NumeroDineroOptions({
 }) {
   const [currencySymbol, setCurrencySymbol] = useState("$");
 
+  // 🪙 Detectar símbolo de moneda del dispositivo
   useEffect(() => {
     try {
       const formatter = new Intl.NumberFormat(undefined, {
@@ -31,12 +33,14 @@ export default function NumeroDineroOptions({
     }
   }, []);
 
+  // 🔢 Formatear con puntos de miles
   const formatWithDots = (value) => {
     if (!value) return "";
     const clean = value.toString().replace(/[^\d]/g, "");
     return clean.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
+  // ✍️ Manejar cambios de valor
   const handleChangeValue = (text) => {
     const numericValue = text.replace(/[^\d]/g, "");
     if (!numericValue) {
@@ -57,6 +61,7 @@ export default function NumeroDineroOptions({
 
   return (
     <View style={{ marginTop: 16 }}>
+      {/* 🔹 Campo numérico o monetario */}
       <Text style={numeric.label}>
         {type === "dinero" ? "Valor monetario" : "Valor numérico"}
       </Text>
@@ -70,6 +75,7 @@ export default function NumeroDineroOptions({
         placeholderTextColor="#888"
       />
 
+      {/* 🔹 Selección de modo */}
       <Text style={numeric.label}>Modo</Text>
       <View style={numeric.modeRow}>
         <TouchableOpacity
@@ -107,6 +113,7 @@ export default function NumeroDineroOptions({
         </TouchableOpacity>
       </View>
 
+      {/* 🔹 Configuración de operación */}
       {numMode === "operar" && (
         <View style={{ marginTop: 16 }}>
           <Text style={numeric.label}>Operación</Text>
@@ -138,6 +145,7 @@ export default function NumeroDineroOptions({
             ))}
           </View>
 
+          {/* 🔹 Campo objetivo */}
           <Text style={[numeric.label, { marginTop: 12 }]}>Campo objetivo</Text>
           <View style={numeric.pickerBox}>
             <Picker
@@ -146,9 +154,12 @@ export default function NumeroDineroOptions({
               style={numeric.picker}
             >
               <Picker.Item label="Selecciona un campo objetivo" value={null} />
-              {numericFields.map((f) => (
-                <Picker.Item key={f.id} label={f.title} value={f.id} />
-              ))}
+              {Array.isArray(numericFields) &&
+                numericFields
+                  .filter((f) => f && f.title)
+                  .map((f) => (
+                    <Picker.Item key={f.id} label={f.title} value={f.id} />
+                  ))}
             </Picker>
           </View>
         </View>

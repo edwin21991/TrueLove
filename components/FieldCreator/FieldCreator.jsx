@@ -75,7 +75,9 @@ export default function FieldCreator({
   async function loadNumericFields() {
     try {
       if (!groupId || !sectionId) return setNumericFields([]);
-      const qRef = query(collection(db, `groups/${groupId}/sections/${sectionId}/fields`));
+      const qRef = query(
+        collection(db, `groups/${groupId}/sections/${sectionId}/fields`)
+      );
       const snap = await getDocs(qRef);
       const nums = [];
       snap.forEach((d) => {
@@ -121,7 +123,8 @@ export default function FieldCreator({
       }
     }
 
-    if (data.type === "foto" || data.type === "video") setMediaUri(opts.valor || null);
+    if (data.type === "foto" || data.type === "video")
+      setMediaUri(opts.valor || null);
     setIsFormValid(true);
   }
 
@@ -169,10 +172,12 @@ export default function FieldCreator({
     if (!title.trim() || !type) return setIsFormValid(false);
     if (type === "foto" || type === "video") return setIsFormValid(!!mediaUri);
     if (type === "número" || type === "dinero") {
-      if (numMode === "documentar") return setIsFormValid(String(valueNumber).trim() !== "");
+      if (numMode === "documentar")
+        return setIsFormValid(String(valueNumber).trim() !== "");
       return setIsFormValid(!!targetFieldId);
     }
-    if (type === "texto" || type === "voz") return setIsFormValid(!!valueText || type === "voz");
+    if (type === "texto" || type === "voz")
+      return setIsFormValid(!!valueText || type === "voz");
     if (type === "fecha") return setIsFormValid(!!dateValue);
     return setIsFormValid(false);
   }
@@ -256,10 +261,16 @@ export default function FieldCreator({
       }
 
       if (editData?.id) {
-        const refDoc = doc(db, `groups/${groupId}/sections/${sectionId}/fields/${editData.id}`);
+        const refDoc = doc(
+          db,
+          `groups/${groupId}/sections/${sectionId}/fields/${editData.id}`
+        );
         await updateDoc(refDoc, fieldDoc);
       } else {
-        await addDoc(collection(db, `groups/${groupId}/sections/${sectionId}/fields`), fieldDoc);
+        await addDoc(
+          collection(db, `groups/${groupId}/sections/${sectionId}/fields`),
+          fieldDoc
+        );
       }
 
       onCreated && onCreated();
@@ -299,17 +310,7 @@ export default function FieldCreator({
               <Text style={{ marginTop: 8, color: "#000", fontWeight: "600" }}>
                 Tipo de campo
               </Text>
-              <View
-                style={[
-                  utils.row,
-                  {
-                    flexWrap: "wrap",
-                    justifyContent: "space-between",
-                    marginTop: 8,
-                    gap: 8,
-                  },
-                ]}
-              >
+              <View style={forms.typeGrid}>
                 {[
                   { key: "fecha", icon: "📅" },
                   { key: "número", icon: "🔢" },
@@ -321,11 +322,14 @@ export default function FieldCreator({
                 ].map((btn) => (
                   <TouchableOpacity
                     key={btn.key}
-                    style={[forms.typeBtn, type === btn.key && forms.typeBtnActive]}
+                    style={[
+                      forms.typeBtn,
+                      type === btn.key && forms.typeBtnActive,
+                    ]}
                     onPress={() => setType(btn.key)}
                     disabled={!!editData}
                   >
-                    <Text style={{ fontWeight: "600", color: "#000" }}>
+                    <Text style={forms.typeBtnText}>
                       {btn.icon} {btn.key}
                     </Text>
                   </TouchableOpacity>
@@ -436,7 +440,7 @@ export default function FieldCreator({
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <Text style={text.whiteButton}>
-                      {editData ? "Guardar cambios" : "Guardar campo"}
+                      {editData ? "Guardar cambios" : "Guardar"}
                     </Text>
                   )}
                 </TouchableOpacity>

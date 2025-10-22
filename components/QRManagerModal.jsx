@@ -93,29 +93,36 @@ export default function QRManagerModal({
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={forms.backdrop}>
-        <View style={[forms.box, { alignItems: "center" }]}>
+        <View style={[forms.box, { alignItems: "center", width: "85%" }]}>
           <Text style={forms.title}>Código QR</Text>
 
           {loading ? (
             <ActivityIndicator color={colors.primary} />
           ) : qrData ? (
             <>
-              <ViewShot options={{ format: "png", quality: 1 }}>
+              {/* 🔹 Contenedor del QR + consecutivo */}
+              <ViewShot
+                options={{ format: "png", quality: 1 }}
+                style={{ alignItems: "center" }}
+              >
                 <QRCode
                   getRef={(r) => (qrRef.current = r)}
                   value={generateQRPayload(entityType, entityId, groupId)}
                   size={200}
                   backgroundColor="white"
                 />
+                {/* 🔹 Mostrar consecutivo visualmente */}
+                <Text
+                  style={{
+                    color: colors.dark,
+                    fontSize: 18,
+                    fontWeight: "700",
+                    marginTop: 10,
+                  }}
+                >
+                  {qrData.code}
+                </Text>
               </ViewShot>
-              <Text
-                style={[
-                  text.subtitle,
-                  { color: colors.dark, marginTop: 10, fontWeight: "600" },
-                ]}
-              >
-                Código: {qrData.code}
-              </Text>
             </>
           ) : (
             <Text style={[text.subtitle, { color: "#666" }]}>
@@ -130,8 +137,8 @@ export default function QRManagerModal({
               {
                 justifyContent: "space-between",
                 width: "100%",
-                marginTop: 20,
-                gap: 8,
+                marginTop: 25,
+                gap: 10,
               },
             ]}
           >

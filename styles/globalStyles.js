@@ -2,8 +2,8 @@ import { StyleSheet } from "react-native";
 
 /* 🎨 Paleta de colores corporativa */
 export const colors = {
-  primary: "#ff3b30", // 🔴 Rojo principal
-  secondary: "#00C851", // 🟢 Verde secundario
+  primary: "#ff3b30",
+  secondary: "#00C851",
   dark: "#000",
   light: "#fff",
   gray: "#888",
@@ -20,10 +20,10 @@ export const modalBase = {
   },
   box: {
     backgroundColor: colors.light,
-    padding: 20,
+    padding: 22,
     borderRadius: 14,
     alignItems: "center",
-    width: "85%",
+    width: "95%", // 🔹 más ancho, centrado
     borderWidth: 2,
     borderColor: colors.primary,
     shadowColor: "#000",
@@ -62,9 +62,9 @@ export const headers = StyleSheet.create({
     color: colors.light,
     fontSize: 28,
     position: "absolute",
-    left: 16,
+    left: 10,
     top: "50%",
-    transform: [{ translateY: -14 }],
+    transform: [{ translateY: -12 }],
     zIndex: 10,
   },
 });
@@ -78,7 +78,6 @@ export const buttons = StyleSheet.create({
     borderWidth: 2,
   },
 
-  /* 🟢 Botones inferiores (Nuevo grupo / Scan QR) */
   greenBottom: {
     backgroundColor: "#E7FBEA",
     borderColor: colors.primary,
@@ -104,7 +103,6 @@ export const buttons = StyleSheet.create({
     borderWidth: 2,
   },
 
-  /* ⚪ Botones superiores */
   topMenu: {
     borderWidth: 2.5,
     borderColor: colors.primary,
@@ -119,20 +117,20 @@ export const buttons = StyleSheet.create({
     minWidth: 95,
   },
 
-  /* 🟢 Botón Crear nuevo campo */
   createField: {
     borderWidth: 2,
     borderColor: colors.secondary,
     backgroundColor: "#E7FBEA",
     borderRadius: 10,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 10,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 10,
+    alignSelf: "center",
+    width: "100%",
   },
 
-  /* 📷 Ícono QR */
   qrIcon: {
     position: "absolute",
     top: 6,
@@ -143,9 +141,40 @@ export const buttons = StyleSheet.create({
     elevation: 3,
   },
 
-  redOutline: { borderColor: colors.primary, backgroundColor: colors.light },
-  greenOutline: { borderColor: colors.secondary, backgroundColor: "#E7FBEA" },
-  blueOutline: { borderColor: "#007AFF", backgroundColor: "#E7F0FB" },
+  // 🔹 Outline buttons usados en modales (QR, etc.)
+  redOutline: {
+    borderColor: colors.primary,
+    backgroundColor: colors.light,
+    borderWidth: 2,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginVertical: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  greenOutline: {
+    borderColor: colors.secondary,
+    backgroundColor: "#E7FBEA",
+    borderWidth: 2,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginVertical: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  blueOutline: {
+    borderColor: "#007AFF",
+    backgroundColor: "#E7F0FB",
+    borderWidth: 2,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginVertical: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });
 
 /* 🧾 Textos */
@@ -153,8 +182,6 @@ export const text = StyleSheet.create({
   title: { color: colors.light, fontWeight: "700", fontSize: 22 },
   subtitle: { color: colors.gray, fontWeight: "600", fontSize: 16 },
   link: { color: "#007AFF", fontWeight: "600" },
-
-  /* 🎯 Tarjetas */
   emoji: { fontSize: 34, textAlign: "center" },
   sectionEmoji: { fontSize: 28, textAlign: "center" },
   cardTitle: {
@@ -164,8 +191,6 @@ export const text = StyleSheet.create({
     fontWeight: "700",
     color: colors.dark,
   },
-
-  /* 🧱 Íconos */
   icon: { fontSize: 18, marginHorizontal: 6 },
   iconsRow: {
     position: "absolute",
@@ -175,8 +200,6 @@ export const text = StyleSheet.create({
     justifyContent: "flex-end",
     gap: 8,
   },
-
-  /* 🟢 Botones */
   greenButton: { color: colors.dark, fontWeight: "700", fontSize: 16 },
   redButton: { color: colors.primary, fontWeight: "700", fontSize: 16 },
   blackButton: { color: colors.dark, fontWeight: "700", fontSize: 15 },
@@ -189,7 +212,8 @@ export const forms = StyleSheet.create({
   box: {
     ...modalBase.box,
     alignItems: "stretch",
-    padding: 16,
+    padding: 20,
+    alignSelf: "center",
   },
   title: {
     fontWeight: "700",
@@ -208,6 +232,15 @@ export const forms = StyleSheet.create({
     color: colors.dark,
     marginBottom: 10,
   },
+
+  /* 🔹 Botones tipo de campo organizados 3x2 */
+  typeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 10,
+  },
   typeBtn: {
     backgroundColor: "#f3f3f3",
     borderWidth: 1.5,
@@ -215,11 +248,42 @@ export const forms = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 10,
+    width: "30%", // 🔹 tres por fila
+    alignItems: "center",
   },
   typeBtnActive: {
     backgroundColor: "#E7FBEA",
     borderColor: colors.secondary,
   },
+
+  /* 🔹 Botones de modo (Documentar / Recordatorio / Operar) */
+  modeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+    marginVertical: 8,
+  },
+  modeBtn: {
+    flex: 1,
+    borderWidth: 2,
+    borderRadius: 8,
+    paddingVertical: 8,
+    alignItems: "center",
+    borderColor: "#ccc",
+    backgroundColor: "#fff",
+  },
+  modeBtnActiveBlue: {
+    borderColor: "#007AFF",
+    backgroundColor: "#E7F0FB",
+  },
+  modeBtnActiveRed: {
+    borderColor: "#ff3b30",
+    backgroundColor: "#FEECEC",
+  },
+  modeText: { color: colors.dark, fontWeight: "600" },
+  modeTextActiveBlue: { color: "#007AFF", fontWeight: "700" },
+  modeTextActiveRed: { color: "#ff3b30", fontWeight: "700" },
+
   cancelBtn: {
     backgroundColor: colors.primary,
     borderRadius: 10,
@@ -252,7 +316,7 @@ export const forms = StyleSheet.create({
 export const cards = StyleSheet.create({
   groupCard: {
     width: "48%",
-    aspectRatio: 1,
+    aspectRatio: 1.1,
     position: "relative",
     alignItems: "center",
     justifyContent: "center",
@@ -260,11 +324,11 @@ export const cards = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.primary,
     borderRadius: 14,
-    paddingVertical: 12,
+    paddingVertical: 6,
     shadowColor: "#000",
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 3,
   },
   sectionCard: {
     backgroundColor: "#FAFAFA",
@@ -280,6 +344,21 @@ export const cards = StyleSheet.create({
   },
 });
 
+/* 📱 Utilidades */
+export const utils = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "nowrap",
+    width: "100%",
+  },
+  centered: { justifyContent: "center", alignItems: "center" },
+  fullWidth: { width: "100%" },
+  marginVertical: { marginVertical: 10 },
+  gap: { marginHorizontal: 6 },
+});
+
 /* 🧮 Campos */
 export const fields = StyleSheet.create({
   card: {
@@ -290,10 +369,13 @@ export const fields = StyleSheet.create({
     marginTop: 8,
     backgroundColor: colors.light,
   },
-  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   title: { fontWeight: "600", color: colors.dark, flex: 1 },
   value: { color: "#333", fontWeight: "500", textAlign: "right" },
-  icons: { flexDirection: "row", justifyContent: "center", gap: 10, marginTop: 4 },
   iconsRight: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -302,150 +384,46 @@ export const fields = StyleSheet.create({
     marginTop: 4,
     marginRight: 6,
   },
-  thumb: { width: 80, height: 80, borderRadius: 6 },
 });
 
-/* 📱 Utilidades */
-export const utils = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", flexWrap: "wrap" },
-  centered: { justifyContent: "center", alignItems: "center" },
-  fullWidth: { width: "100%" },
-  marginVertical: { marginVertical: 10 },
-  gap: { marginHorizontal: 6 },
-});
-
-/* 🧩 Modales */
+/* 🧩 Otros modales */
 export const groupModal = StyleSheet.create({
   backdrop: modalBase.backdrop,
-  box: modalBase.box,
-  title: {
-    fontWeight: "700",
-    fontSize: 18,
-    color: colors.dark,
-    marginBottom: 10,
-  },
-  input: {
-    borderWidth: 1.2,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 16,
-    color: colors.dark,
-    backgroundColor: colors.light,
-    width: "100%",
-    marginBottom: 10,
-  },
-  chooseEmojiBtn: {
-    borderWidth: 2,
-    borderColor: colors.primary,
-    backgroundColor: "#FEECEC",
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginVertical: 10,
-    alignItems: "center",
-    width: "100%",
-  },
-  actionsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginTop: 6,
-  },
-  cancelBtn: {
-    backgroundColor: colors.light,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    borderRadius: 10,
-    flex: 1,
+  box: {
+    ...modalBase.box,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
-    marginRight: 8,
-  },
-  saveBtn: {
-    backgroundColor: colors.secondary,
-    borderRadius: 10,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-    marginLeft: 8,
+    width: "90%",
   },
 });
 
-/* 🔹 SectionModal */
 export const sectionModal = StyleSheet.create({
   backdrop: modalBase.backdrop,
-  box: modalBase.box,
-  title: {
-    fontWeight: "700",
-    fontSize: 18,
-    color: colors.dark,
-    marginBottom: 10,
-  },
-  input: {
-    borderWidth: 1.2,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 16,
-    color: colors.dark,
-    backgroundColor: colors.light,
-    width: "100%",
-    marginBottom: 10,
-  },
-  chooseEmojiBtn: {
-    borderWidth: 2,
-    borderColor: colors.primary,
-    backgroundColor: "#FEECEC",
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginVertical: 10,
-    alignItems: "center",
-    width: "100%",
-  },
-  actionsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginTop: 6,
-  },
-  cancelBtn: {
-    backgroundColor: colors.light,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    borderRadius: 10,
-    flex: 1,
+  box: {
+    ...modalBase.box,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
-    marginRight: 8,
-  },
-  saveBtn: {
-    backgroundColor: colors.secondary,
-    borderRadius: 10,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-    marginLeft: 8,
+    width: "90%",
   },
 });
 
-/* 🧩 QR Modal */
 export const qrModal = StyleSheet.create({
   backdrop: modalBase.backdrop,
   box: {
     ...modalBase.box,
     alignItems: "center",
     justifyContent: "center",
-    width: "85%",
+  },
+  buttonsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    marginTop: 16,
+    gap: 10,
   },
 });
 
-/* 🧩 Emoji Picker */
 export const emojiPicker = StyleSheet.create({
   backdrop: modalBase.backdrop,
   box: {
@@ -460,27 +438,25 @@ export const emojiPicker = StyleSheet.create({
     marginBottom: 10,
     color: colors.dark,
   },
-  searchInput: {
+});
+
+/* 🧮 Campos numéricos / dinero */
+export const numeric = StyleSheet.create({
+  label: {
+    color: colors.dark,
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  input: {
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 16,
-    width: "100%",
-    marginBottom: 10,
-  },
-  emojiCell: {
-    margin: 6,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cancelBtn: {
-    borderWidth: 2,
-    borderColor: colors.primary,
-    backgroundColor: "#FEECEC",
     borderRadius: 10,
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginTop: 10,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    backgroundColor: colors.light,
+    color: colors.dark,
+    marginBottom: 14,
   },
 });
