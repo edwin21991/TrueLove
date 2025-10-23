@@ -2,7 +2,9 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { numeric } from "../../styles/globalStyles";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { db } from "../../firebase";
+import { forms, numeric } from "../../styles/globalStyles";
 
 export default function NumeroDineroOptions({
   type,
@@ -13,8 +15,10 @@ export default function NumeroDineroOptions({
   targetFieldId,
   setTargetFieldId,
   numericFields,
+  setNumericFields,
   valueNumber,
   setValueNumber,
+  groupId,
 }) {
   const [currencySymbol, setCurrencySymbol] = useState("$");
 
@@ -26,12 +30,48 @@ export default function NumeroDineroOptions({
         currency: "USD",
       });
       const symbol =
-        formatter.formatToParts(1).find((p) => p.type === "currency")?.value || "$";
+        formatter.formatToParts(1).find((p) => p.type === "currency")?.value ||
+        "$";
       setCurrencySymbol(symbol);
     } catch {
       setCurrencySymbol("$");
     }
   }, []);
+
+  // 🔹 Cargar todos los campos numéricos / dinero de TODO el grupo (no solo la sección)
+  useEffect(() => {
+    if (!groupId) return;
+    (async () => {
+      try {
+        const sectionsSnap = await getDocs(
+          query(collection(db, `groups/${groupId}/sections`), orderBy("createdAt", "asc"))
+        );
+        const allFields = [];
+
+        for (const sec of sectionsSnap.docs) {
+          const secData = sec.data();
+          const fieldsSnap = await getDocs(
+            collection(db, `groups/${groupId}/sections/${sec.id}/fields`)
+          );
+
+          fieldsSnap.forEach((f) => {
+            const data = f.data();
+            if (data.type === "número" || data.type === "dinero") {
+              allFields.push({
+                id: f.id,
+                title: `${secData.title || "Sin sección"} – ${data.title}`,
+              });
+            }
+          });
+        }
+
+        setNumericFields(allFields);
+      } catch (err) {
+        console.error("Error cargando campos numéricos del grupo:", err);
+        setNumericFields([]);
+      }
+    })();
+  }, [groupId]);
 
   // 🔢 Formatear con puntos de miles
   const formatWithDots = (value) => {
@@ -57,10 +97,10 @@ export default function NumeroDineroOptions({
   };
 
   const shouldShow = type === "número" || type === "dinero";
-  if (!shouldShow) return <View style={{ height: 0, overflow: "hidden" }} />;
+  if (!shouldShow) return null;
 
   return (
-    <View style={{ marginTop: 16 }}>
+    <View style={forms.fullWidth}>
       {/* 🔹 Campo numérico o monetario */}
       <Text style={numeric.label}>
         {type === "dinero" ? "Valor monetario" : "Valor numérico"}
@@ -77,18 +117,18 @@ export default function NumeroDineroOptions({
 
       {/* 🔹 Selección de modo */}
       <Text style={numeric.label}>Modo</Text>
-      <View style={numeric.modeRow}>
+      <View style={forms.modeRow}>
         <TouchableOpacity
           onPress={() => setNumMode("documentar")}
           style={[
-            numeric.modeBtn,
-            numMode === "documentar" && numeric.modeBtnActiveBlue,
+            forms.modeBtn,
+            numMode === "documentar" && forms.modeBtnActiveBlue,
           ]}
         >
           <Text
             style={[
-              numeric.modeText,
-              numMode === "documentar" && numeric.modeTextActiveBlue,
+              forms.modeText,
+              numMode === "documentar" && forms.modeTextActiveBlue,
             ]}
           >
             📝 Documentar
@@ -98,14 +138,14 @@ export default function NumeroDineroOptions({
         <TouchableOpacity
           onPress={() => setNumMode("operar")}
           style={[
-            numeric.modeBtn,
-            numMode === "operar" && numeric.modeBtnActiveBlue,
+            forms.modeBtn,
+            numMode === "operar" && forms.modeBtnActiveBlue,
           ]}
         >
           <Text
             style={[
-              numeric.modeText,
-              numMode === "operar" && numeric.modeTextActiveBlue,
+              forms.modeText,
+              numMode === "operar" && forms.modeTextActiveBlue,
             ]}
           >
             ⚙️ Operar
@@ -115,10 +155,10 @@ export default function NumeroDineroOptions({
 
       {/* 🔹 Configuración de operación */}
       {numMode === "operar" && (
-        <View style={{ marginTop: 16 }}>
+        <View>
           <Text style={numeric.label}>Operación</Text>
 
-          <View style={numeric.operationsRow}>
+          <View style={forms.modeRow}>
             {[
               { op: "suma", icon: "＋" },
               { op: "resta", icon: "−" },
@@ -129,14 +169,14 @@ export default function NumeroDineroOptions({
                 key={item.op}
                 onPress={() => setOperation(item.op)}
                 style={[
-                  numeric.opBtn,
-                  operation === item.op && numeric.opBtnActive,
+                  forms.modeBtn,
+                  operation === item.op && forms.modeBtnActiveBlue,
                 ]}
               >
                 <Text
                   style={[
-                    numeric.opText,
-                    operation === item.op && numeric.opTextActive,
+                    forms.modeText,
+                    operation === item.op && forms.modeTextActiveBlue,
                   ]}
                 >
                   {item.icon}
@@ -146,12 +186,13 @@ export default function NumeroDineroOptions({
           </View>
 
           {/* 🔹 Campo objetivo */}
-          <Text style={[numeric.label, { marginTop: 12 }]}>Campo objetivo</Text>
-          <View style={numeric.pickerBox}>
+          <Text style={numeric.label}>Campo objetivo</Text>
+          <View style={forms.input}>
             <Picker
               selectedValue={targetFieldId}
               onValueChange={setTargetFieldId}
-              style={numeric.picker}
+              style={{ color: "#000" }}
+              dropdownIconColor="#000"
             >
               <Picker.Item label="Selecciona un campo objetivo" value={null} />
               {Array.isArray(numericFields) &&

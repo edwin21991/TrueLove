@@ -14,7 +14,14 @@ import * as Sharing from "expo-sharing";
 import { assignQR, changeQR, generateQRPayload } from "../utils/qrManager";
 import { db } from "../firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { cards, buttons, text, qrModal, lists, colors } from "../styles/globalStyles";
+import {
+  cards,
+  buttons,
+  text,
+  qrModal,
+  lists,
+  colors,
+} from "../styles/globalStyles";
 
 export default function GroupCard({ item, onPress, onEdit, onClone, onDelete }) {
   const [qrVisible, setQrVisible] = useState(false);
@@ -87,27 +94,54 @@ export default function GroupCard({ item, onPress, onEdit, onClone, onDelete }) 
   }
 
   return (
-    <View style={cards.groupCard}>
+    <TouchableOpacity
+      style={cards.groupCard}
+      activeOpacity={0.9}
+      onPress={onPress}
+    >
       {/* 🔹 Contenido principal */}
-      <TouchableOpacity onPress={onPress} style={{ alignItems: "center" }}>
+      <View style={{ alignItems: "center" }}>
         <Text style={text.emoji}>{item.emoji}</Text>
         <Text style={text.cardTitle}>{item.title}</Text>
-      </TouchableOpacity>
+      </View>
 
       {/* 📷 Botón QR */}
-      <TouchableOpacity style={buttons.qrIcon} onPress={handleShowQR}>
-        <Text style={{ fontSize: 20 }}>📷</Text>
+      <TouchableOpacity
+        style={buttons.qrIcon}
+        onPress={(e) => {
+          e.stopPropagation();
+          handleShowQR();
+        }}
+      >
+        <Text style={text.icon}>📷</Text>
       </TouchableOpacity>
 
-      {/* ⚙️ Acciones inferiores — ahora alineadas abajo a la derecha */}
+      {/* ⚙️ Acciones inferiores */}
       <View style={text.iconsRow}>
-        <TouchableOpacity onPress={onEdit}>
+        <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation();
+            onEdit && onEdit();
+          }}
+        >
           <Text style={[text.icon, { color: "#ff9500" }]}>✏️</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={onClone}>
+
+        <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation();
+            onClone && onClone();
+          }}
+        >
           <Text style={[text.icon, { color: "#00C851" }]}>📄</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={onDelete}>
+
+        <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation();
+            onDelete && onDelete();
+          }}
+        >
           <Text style={[text.icon, { color: "#ff3b30" }]}>🗑️</Text>
         </TouchableOpacity>
       </View>
@@ -115,10 +149,8 @@ export default function GroupCard({ item, onPress, onEdit, onClone, onDelete }) 
       {/* 📦 Modal QR */}
       <Modal visible={qrVisible} transparent animationType="fade">
         <View style={qrModal.backdrop}>
-          <View style={[qrModal.box, { alignItems: "center" }]}>
-            <Text style={[text.title, { fontSize: 18, marginBottom: 10 }]}>
-              Código QR del Grupo
-            </Text>
+          <View style={qrModal.box}>
+            <Text style={text.title}>Código QR del Grupo</Text>
 
             {loading ? (
               <ActivityIndicator color={colors.primary} />
@@ -131,23 +163,18 @@ export default function GroupCard({ item, onPress, onEdit, onClone, onDelete }) 
                     backgroundColor="white"
                   />
                 </ViewShot>
-                <Text style={[text.subtitle, { marginTop: 12, color: colors.dark }]}>
-                  Código: {qrData.code}
-                </Text>
+                <Text style={text.subtitle}>Código: {qrData.code}</Text>
               </>
             ) : (
               <Text style={text.subtitle}>Sin QR asignado</Text>
             )}
 
-            <TouchableOpacity
-              style={[buttons.greenOutline, { marginTop: 14 }]}
-              onPress={handleDownloadQR}
-            >
+            <TouchableOpacity style={buttons.greenOutline} onPress={handleDownloadQR}>
               <Text style={text.greenButton}>Descargar QR</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[buttons.blueOutline, { marginTop: 8 }]}
+              style={buttons.blueOutline}
               onPress={async () => {
                 await loadFreeQRCodes();
                 setQrListVisible(true);
@@ -157,7 +184,7 @@ export default function GroupCard({ item, onPress, onEdit, onClone, onDelete }) 
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[buttons.redOutline, { marginTop: 8 }]}
+              style={buttons.redOutline}
               onPress={() => setQrVisible(false)}
             >
               <Text style={text.redButton}>Cerrar</Text>
@@ -170,9 +197,7 @@ export default function GroupCard({ item, onPress, onEdit, onClone, onDelete }) 
       <Modal visible={qrListVisible} transparent animationType="fade">
         <View style={qrModal.backdrop}>
           <View style={[qrModal.box, { maxHeight: "70%", width: "85%" }]}>
-            <Text style={[text.title, { marginBottom: 10 }]}>
-              Seleccionar QR disponible
-            </Text>
+            <Text style={text.title}>Seleccionar QR disponible</Text>
             {freeQRCodes.length === 0 ? (
               <Text style={text.subtitle}>No hay QR disponibles.</Text>
             ) : (
@@ -180,14 +205,17 @@ export default function GroupCard({ item, onPress, onEdit, onClone, onDelete }) 
                 data={freeQRCodes}
                 keyExtractor={(i) => i.id}
                 renderItem={({ item }) => (
-                  <TouchableOpacity style={lists.item} onPress={() => handleChangeQR(item.id)}>
+                  <TouchableOpacity
+                    style={lists.item}
+                    onPress={() => handleChangeQR(item.id)}
+                  >
                     <Text style={lists.itemText}>{item.code}</Text>
                   </TouchableOpacity>
                 )}
               />
             )}
             <TouchableOpacity
-              style={[buttons.redOutline, { marginTop: 10 }]}
+              style={buttons.redOutline}
               onPress={() => setQrListVisible(false)}
             >
               <Text style={text.redButton}>Cerrar</Text>
@@ -195,6 +223,6 @@ export default function GroupCard({ item, onPress, onEdit, onClone, onDelete }) 
           </View>
         </View>
       </Modal>
-    </View>
+    </TouchableOpacity>
   );
 }

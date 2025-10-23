@@ -1,3 +1,4 @@
+// components/SectionCard.jsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -15,6 +16,8 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  updateDoc,
+  getDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import FieldCreator from "../components/FieldCreator/FieldCreator";
@@ -43,6 +46,11 @@ function calcularCuentaRegresiva(fechaISO) {
   }
 }
 
+// 💵 Formatear dinero
+function formatoDinero(valor) {
+  return `$${Number(valor).toLocaleString("es-CO")}`;
+}
+
 export default function SectionCard({
   item,
   groupId,
@@ -57,6 +65,7 @@ export default function SectionCard({
   const [sound, setSound] = useState(null);
   const [qrVisible, setQrVisible] = useState(false);
 
+  // 🔄 Escuchar todos los campos de la sección
   useEffect(() => {
     if (!groupId || !item?.id) return;
     const q = query(
@@ -71,6 +80,7 @@ export default function SectionCard({
     return () => unsub();
   }, [groupId, item.id]);
 
+  // 🎧 Reproducir audio
   async function reproducirAudio(uri) {
     try {
       if (!uri) return Alert.alert("Nada que reproducir");
@@ -79,6 +89,88 @@ export default function SectionCard({
       await sound.playAsync();
     } catch (e) {
       console.error("playAudio", e);
+    }
+  }
+
+  // 🧠 Cálculo dinámico de resultados
+  useEffect(() => {
+    async function recalcularResultados() {
+      const resultados = fieldsData.filter((f) => f.options?.modo === "resultado");
+
+      for (const res of resultados) {
+        const baseIds = res.options?.baseFields || [];
+        const op = res.options?.op;
+
+        if (baseIds.length !== 2 || !op) continue;
+
+        try {
+          const [id1, id2] = baseIds;
+          let base1, base2;
+
+          // Buscar los valores base directamente en el array de fields
+          base1 = fieldsData.find((f) => f.id === id1);
+          base2 = fieldsData.find((f) => f.id === id2);
+
+          if (!base1 || !base2) continue;
+
+          const v1 = parseFloat(base1.options?.valor || 0);
+          const v2 = parseFloat(base2.options?.valor || 0);
+
+          let resultado = 0;
+          switch (op) {
+            case "suma":
+              resultado = v1 + v2;
+              break;
+            case "resta":
+              resultado = v1 - v2;
+              break;
+            case "multiplicar":
+              resultado = v1 * v2;
+              break;
+            case "dividir":
+              resultado = v2 !== 0 ? v1 / v2 : 0;
+              break;
+          }
+
+          const esDinero =
+            base1.type === "dinero" || base2.type === "dinero" || res.type === "dinero";
+
+          const valorFinal = esDinero ? Number(resultado.toFixed(2)) : resultado;
+
+          // Actualizar si cambió el valor
+          if (res.options?.valor !== valorFinal) {
+            await updateDoc(
+              doc(db, `groups/${groupId}/sections/${item.id}/fields/${res.id}`),
+              {
+                "options.valor": valorFinal,
+              }
+            );
+          }
+        } catch (e) {
+          console.error("Error recalculando resultado:", e);
+        }
+      }
+    }
+
+    if (fieldsData.length > 0) recalcularResultados();
+  }, [fieldsData]);
+
+  // 🗑️ Eliminar campo resultado
+  async function eliminarCampoResultado(f) {
+    try {
+      await deleteDoc(doc(db, `groups/${groupId}/sections/${item.id}/fields/${f.id}`));
+      // Restaurar campo base a "documentar"
+      const baseId = f.options?.baseFields?.[0];
+      if (baseId) {
+        await updateDoc(
+          doc(db, `groups/${groupId}/sections/${item.id}/fields/${baseId}`),
+          {
+            "options.modo": "documentar",
+          }
+        );
+      }
+    } catch (e) {
+      console.error("Error eliminando resultado:", e);
     }
   }
 
@@ -125,11 +217,13 @@ export default function SectionCard({
             else if (f.type === "número")
               valorMostrado = v?.toLocaleString("es-CO") ?? "0";
             else if (f.type === "dinero")
-              valorMostrado = v != null ? `$${v.toLocaleString("es-CO")}` : "$0";
+              valorMostrado = v != null ? formatoDinero(v) : "$0";
             else if (f.type === "texto") valorMostrado = v ?? "-";
             else if (f.type === "voz") valorMostrado = "🎙️ Nota de voz";
             else if (f.type === "foto") valorMostrado = "📷 Foto";
             else if (f.type === "video") valorMostrado = "🎥 Video";
+
+            const esResultado = f.options?.modo === "resultado";
 
             return (
               <View key={f.id} style={fields.card}>
@@ -146,42 +240,60 @@ export default function SectionCard({
                   )}
                 </View>
 
-                {/* 🧭 Íconos más pequeños y juntos (alineados a la derecha) */}
+                {/* 🧭 Íconos */}
                 <View style={fields.iconsRight}>
-                  <TouchableOpacity onPress={() => setEditingField(f)}>
-                    <Text style={[text.icon, { color: "#ff9500" }]}>✏️</Text>
-                  </TouchableOpacity>
+                  {!esResultado && (
+                    <>
+                      <TouchableOpacity onPress={() => setEditingField(f)}>
+                        <Text style={[text.icon, { color: "#ff9500" }]}>✏️</Text>
+                      </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={async () => {
-                      const clone = { ...f, title: f.title + " (copia)" };
-                      delete clone.id;
-                      await addDoc(
-                        collection(db, `groups/${groupId}/sections/${item.id}/fields`),
-                        clone
-                      );
-                    }}
-                  >
-                    <Text style={[text.icon, { color: "#00C851" }]}>📄</Text>
-                  </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={async () => {
+                          const clone = { ...f, title: f.title + " (copia)" };
+                          delete clone.id;
+                          await addDoc(
+                            collection(db, `groups/${groupId}/sections/${item.id}/fields`),
+                            clone
+                          );
+                        }}
+                      >
+                        <Text style={[text.icon, { color: "#00C851" }]}>📄</Text>
+                      </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={() =>
-                      Alert.alert("Eliminar", "¿Seguro que deseas eliminar este campo?", [
-                        { text: "Cancelar", style: "cancel" },
-                        {
-                          text: "Eliminar",
-                          style: "destructive",
-                          onPress: async () =>
-                            await deleteDoc(
-                              doc(db, `groups/${groupId}/sections/${item.id}/fields/${f.id}`)
-                            ),
-                        },
-                      ])
-                    }
-                  >
-                    <Text style={[text.icon, { color: "#ff3b30" }]}>🗑️</Text>
-                  </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() =>
+                          Alert.alert("Eliminar", "¿Seguro que deseas eliminar este campo?", [
+                            { text: "Cancelar", style: "cancel" },
+                            {
+                              text: "Eliminar",
+                              style: "destructive",
+                              onPress: async () =>
+                                await deleteDoc(
+                                  doc(db, `groups/${groupId}/sections/${item.id}/fields/${f.id}`)
+                                ),
+                            },
+                          ])
+                        }
+                      >
+                        <Text style={[text.icon, { color: "#ff3b30" }]}>🗑️</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+
+                  {/* 🗑️ Solo eliminar para resultados */}
+                  {esResultado && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        Alert.alert("Eliminar resultado", "¿Seguro que deseas eliminar este resultado?", [
+                          { text: "Cancelar", style: "cancel" },
+                          { text: "Eliminar", style: "destructive", onPress: () => eliminarCampoResultado(f) },
+                        ])
+                      }
+                    >
+                      <Text style={[text.icon, { color: "#ff3b30" }]}>🗑️</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             );

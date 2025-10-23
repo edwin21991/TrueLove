@@ -23,7 +23,7 @@ export const modalBase = {
     padding: 22,
     borderRadius: 14,
     alignItems: "center",
-    width: "95%", // 🔹 más ancho, centrado
+    width: "95%",
     borderWidth: 2,
     borderColor: colors.primary,
     shadowColor: "#000",
@@ -77,7 +77,6 @@ export const buttons = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
   },
-
   greenBottom: {
     backgroundColor: "#E7FBEA",
     borderColor: colors.primary,
@@ -102,7 +101,6 @@ export const buttons = StyleSheet.create({
     flexDirection: "row",
     borderWidth: 2,
   },
-
   topMenu: {
     borderWidth: 2.5,
     borderColor: colors.primary,
@@ -116,7 +114,6 @@ export const buttons = StyleSheet.create({
     justifyContent: "center",
     minWidth: 95,
   },
-
   createField: {
     borderWidth: 2,
     borderColor: colors.secondary,
@@ -130,7 +127,6 @@ export const buttons = StyleSheet.create({
     alignSelf: "center",
     width: "100%",
   },
-
   qrIcon: {
     position: "absolute",
     top: 6,
@@ -140,8 +136,6 @@ export const buttons = StyleSheet.create({
     padding: 5,
     elevation: 3,
   },
-
-  // 🔹 Outline buttons usados en modales (QR, etc.)
   redOutline: {
     borderColor: colors.primary,
     backgroundColor: colors.light,
@@ -232,8 +226,6 @@ export const forms = StyleSheet.create({
     color: colors.dark,
     marginBottom: 10,
   },
-
-  /* 🔹 Botones tipo de campo organizados 3x2 */
   typeGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -248,15 +240,13 @@ export const forms = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 10,
-    width: "30%", // 🔹 tres por fila
+    width: "30%",
     alignItems: "center",
   },
   typeBtnActive: {
     backgroundColor: "#E7FBEA",
     borderColor: colors.secondary,
   },
-
-  /* 🔹 Botones de modo (Documentar / Recordatorio / Operar) */
   modeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -283,7 +273,6 @@ export const forms = StyleSheet.create({
   modeText: { color: colors.dark, fontWeight: "600" },
   modeTextActiveBlue: { color: "#007AFF", fontWeight: "700" },
   modeTextActiveRed: { color: "#ff3b30", fontWeight: "700" },
-
   cancelBtn: {
     backgroundColor: colors.primary,
     borderRadius: 10,
@@ -386,27 +375,65 @@ export const fields = StyleSheet.create({
   },
 });
 
-/* 🧩 Otros modales */
+/* 🧩 Modales: grupo y sección */
 export const groupModal = StyleSheet.create({
   backdrop: modalBase.backdrop,
   box: {
     ...modalBase.box,
-    alignItems: "center",
-    justifyContent: "center",
     width: "90%",
+    alignItems: "stretch",
   },
+  title: {
+    fontWeight: "700",
+    fontSize: 18,
+    color: colors.dark,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 1.2,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    backgroundColor: colors.light,
+    color: colors.dark,
+    marginBottom: 10,
+  },
+  chooseEmojiBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  actionsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 18,
+    gap: 10,
+  },
+  cancelBtn: forms.cancelBtn,
+  saveBtn: forms.saveBtn,
 });
 
 export const sectionModal = StyleSheet.create({
   backdrop: modalBase.backdrop,
   box: {
     ...modalBase.box,
-    alignItems: "center",
-    justifyContent: "center",
     width: "90%",
+    alignItems: "stretch",
   },
+  title: groupModal.title,
+  input: groupModal.input,
+  chooseEmojiBtn: groupModal.chooseEmojiBtn,
+  actionsRow: groupModal.actionsRow,
+  cancelBtn: forms.cancelBtn,
+  saveBtn: forms.saveBtn,
 });
 
+/* 🧩 QR modal y emoji picker */
 export const qrModal = StyleSheet.create({
   backdrop: modalBase.backdrop,
   box: {

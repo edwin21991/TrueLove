@@ -1,3 +1,4 @@
+// components/FieldCreator/FieldCreator.jsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -9,26 +10,26 @@ import {
   Alert,
   Keyboard,
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import { Video } from "expo-av";
 import {
   collection,
   addDoc,
   getDocs,
   doc,
   updateDoc,
-  query,
+  getDoc,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../../firebase";
+import { db } from "../../firebase";
 
+// 🧩 Subcomponentes
 import FechaOptions from "./FechaOptions";
 import NumeroDineroOptions from "./NumeroDineroOptions";
 import TextoVozOptions from "./TextoVozOptions";
+import CamaraVideoOptions from "./CamaraVideoOptions";
+
+// 🎨 Estilos
 import { forms, text, utils } from "../../styles/globalStyles";
 
 export default function FieldCreator({
@@ -67,31 +68,6 @@ export default function FieldCreator({
   // -------- FOTO/VIDEO --------
   const [mediaUri, setMediaUri] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [showMediaModal, setShowMediaModal] = useState(false);
-
-  const modoNube = true;
-
-  // 📦 Cargar campos numéricos
-  async function loadNumericFields() {
-    try {
-      if (!groupId || !sectionId) return setNumericFields([]);
-      const qRef = query(
-        collection(db, `groups/${groupId}/sections/${sectionId}/fields`)
-      );
-      const snap = await getDocs(qRef);
-      const nums = [];
-      snap.forEach((d) => {
-        const data = d.data();
-        if (data.type === "número" || data.type === "dinero") {
-          nums.push({ id: d.id, title: data.title });
-        }
-      });
-      setNumericFields(nums);
-    } catch (e) {
-      console.error("load numeric fields", e);
-      setNumericFields([]);
-    }
-  }
 
   // 🧩 Cargar datos al editar
   function loadEditData(data) {
@@ -144,13 +120,11 @@ export default function FieldCreator({
     setMediaUri(null);
     setUploading(false);
     setIsFormValid(false);
-    setShowMediaModal(false);
   }
 
   // ⚡ Cuando se abre el modal
   useEffect(() => {
     if (visible) {
-      loadNumericFields();
       if (editData) loadEditData(editData);
       else reset();
     }
@@ -182,43 +156,6 @@ export default function FieldCreator({
     return setIsFormValid(false);
   }
 
-  // 📷 Foto / Video
-  async function pickMedia(mediaType) {
-    try {
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted)
-        return Alert.alert("Permiso requerido", "Activa la cámara para continuar.");
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes:
-          mediaType === "video"
-            ? ImagePicker.MediaTypeOptions.Videos
-            : ImagePicker.MediaTypeOptions.Images,
-        quality: 0.7,
-      });
-
-      if (!result.canceled) {
-        const uri = result.assets[0].uri;
-        if (modoNube) {
-          setUploading(true);
-          const response = await fetch(uri);
-          const blob = await response.blob();
-          const refFile = ref(storage, `${mediaType}s/${Date.now()}`);
-          await uploadBytes(refFile, blob);
-          const url = await getDownloadURL(refFile);
-          setMediaUri(url);
-        } else {
-          setMediaUri(uri);
-        }
-      }
-    } catch (e) {
-      console.error("pickMedia", e);
-      Alert.alert("Error", "No se pudo capturar el medio");
-    } finally {
-      setUploading(false);
-    }
-  }
-
   // 💾 Guardar campo
   async function handleSave() {
     if (!isFormValid)
@@ -244,8 +181,10 @@ export default function FieldCreator({
         const cleaned = String(valueNumber).replace(/[^\d]/g, "").trim();
         const n = parseInt(cleaned || "0", 10);
         fieldDoc.options.valor = n;
-        if (numMode === "operar")
+
+        if (numMode === "operar" && targetFieldId) {
           fieldDoc.options.operación = { op: operation, targetFieldId };
+        }
       } else if (type === "texto" || type === "voz") {
         fieldDoc.options = {
           valor: valueText.trim?.() || valueText,
@@ -260,17 +199,56 @@ export default function FieldCreator({
         fieldDoc.options = { valor: mediaUri };
       }
 
+      let savedRef;
       if (editData?.id) {
         const refDoc = doc(
           db,
           `groups/${groupId}/sections/${sectionId}/fields/${editData.id}`
         );
         await updateDoc(refDoc, fieldDoc);
+        savedRef = refDoc;
       } else {
-        await addDoc(
+        savedRef = await addDoc(
           collection(db, `groups/${groupId}/sections/${sectionId}/fields`),
           fieldDoc
         );
+      }
+
+      // 🔹 Si es un campo de operación, crear campo de resultado automáticamente
+      if ((type === "número" || type === "dinero") && numMode === "operar" && targetFieldId) {
+        const targetFieldSnap = await getDoc(
+          doc(db, `groups/${groupId}/sections/${sectionId}/fields/${targetFieldId}`)
+        );
+
+        if (targetFieldSnap.exists()) {
+          const targetField = targetFieldSnap.data();
+          const opSimbolos = {
+            suma: "+",
+            resta: "−",
+            multiplicar: "×",
+            dividir: "÷",
+          };
+          const simbolo = opSimbolos[operation] || "?";
+
+          const esDinero =
+            type === "dinero" || targetField.type === "dinero";
+
+          const resultField = {
+            title: `${title} ${simbolo} ${targetField.title}`,
+            type: esDinero ? "dinero" : "número",
+            options: {
+              modo: "resultado",
+              baseFields: [savedRef.id, targetFieldId],
+              op: operation,
+            },
+            createdAt: new Date(),
+          };
+
+          await addDoc(
+            collection(db, `groups/${groupId}/sections/${sectionId}/fields`),
+            resultField
+          );
+        }
       }
 
       onCreated && onCreated();
@@ -289,7 +267,7 @@ export default function FieldCreator({
       <View style={forms.backdrop}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ width: "90%" }}
+          style={forms.fullWidth}
         >
           <View style={forms.box}>
             <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
@@ -307,9 +285,7 @@ export default function FieldCreator({
               />
 
               {/* 🔹 Tipo */}
-              <Text style={{ marginTop: 8, color: "#000", fontWeight: "600" }}>
-                Tipo de campo
-              </Text>
+              <Text style={text.blackButton}>Tipo de campo</Text>
               <View style={forms.typeGrid}>
                 {[
                   { key: "fecha", icon: "📅" },
@@ -329,9 +305,7 @@ export default function FieldCreator({
                     onPress={() => setType(btn.key)}
                     disabled={!!editData}
                   >
-                    <Text style={forms.typeBtnText}>
-                      {btn.icon} {btn.key}
-                    </Text>
+                    <Text>{btn.icon} {btn.key}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -356,8 +330,10 @@ export default function FieldCreator({
                 targetFieldId={targetFieldId}
                 setTargetFieldId={setTargetFieldId}
                 numericFields={numericFields}
+                setNumericFields={setNumericFields}
                 valueNumber={valueNumber}
                 setValueNumber={setValueNumber}
+                groupId={groupId}
               />
 
               {(type === "texto" || type === "voz") && (
@@ -378,48 +354,18 @@ export default function FieldCreator({
                 />
               )}
 
-              {/* 📸 Foto / 🎥 Video */}
               {(type === "foto" || type === "video") && (
-                <View style={{ marginTop: 16 }}>
-                  <TouchableOpacity
-                    onPress={() => pickMedia(type)}
-                    style={forms.mediaBtn}
-                    disabled={uploading}
-                  >
-                    {uploading ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <Text style={text.whiteButton}>
-                        {type === "foto" ? "📷 Tomar foto" : "🎥 Grabar video"}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-
-                  {mediaUri && (
-                    <TouchableOpacity
-                      onPress={() => setShowMediaModal(true)}
-                      style={{ marginTop: 10, alignItems: "center" }}
-                    >
-                      {type === "foto" ? (
-                        <Image
-                          source={{ uri: mediaUri }}
-                          style={{ width: 200, height: 200, borderRadius: 8 }}
-                        />
-                      ) : (
-                        <Text style={text.link}>🎥 Ver video grabado</Text>
-                      )}
-                    </TouchableOpacity>
-                  )}
-                </View>
+                <CamaraVideoOptions
+                  type={type}
+                  mediaUri={mediaUri}
+                  setMediaUri={setMediaUri}
+                  uploading={uploading}
+                  setUploading={setUploading}
+                />
               )}
 
-              {/* 🔘 Botones */}
-              <View
-                style={[
-                  utils.row,
-                  { justifyContent: "space-between", marginTop: 18 },
-                ]}
-              >
+              {/* 🔘 Botones finales */}
+              <View style={[utils.row, { marginTop: 18 }]}>
                 <TouchableOpacity
                   onPress={() => {
                     reset();
@@ -449,52 +395,6 @@ export default function FieldCreator({
           </View>
         </KeyboardAvoidingView>
       </View>
-
-      {/* 🎥 Modal imagen / video */}
-      {showMediaModal && (
-        <Modal visible transparent>
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: "rgba(0,0,0,0.9)",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <TouchableOpacity
-              onPress={() => setShowMediaModal(false)}
-              style={{
-                position: "absolute",
-                top: 40,
-                right: 20,
-                backgroundColor: "rgba(255,255,255,0.2)",
-                padding: 10,
-                borderRadius: 30,
-              }}
-            >
-              <Text style={{ color: "#fff", fontSize: 18 }}>✖</Text>
-            </TouchableOpacity>
-
-            {type === "foto" ? (
-              <Image
-                source={{ uri: mediaUri }}
-                style={{ width: "90%", height: "70%", borderRadius: 12 }}
-                resizeMode="contain"
-              />
-            ) : (
-              <Video
-                source={{ uri: mediaUri }}
-                style={{ width: "90%", height: "70%", borderRadius: 12 }}
-                useNativeControls
-                shouldPlay
-                resizeMode="contain"
-                isLooping
-                volume={1.0}
-              />
-            )}
-          </View>
-        </Modal>
-      )}
     </Modal>
   );
 }

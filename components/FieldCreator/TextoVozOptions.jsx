@@ -1,3 +1,4 @@
+// components/FieldCreator/TextoVozOptions.jsx
 import React, { useState } from "react";
 import {
   View,
@@ -11,6 +12,7 @@ import { Audio } from "expo-av";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../../firebase";
+import { forms, text, buttons } from "../../styles/globalStyles";
 
 export default function TextoVozOptions({
   type,
@@ -107,23 +109,13 @@ export default function TextoVozOptions({
   }
 
   return (
-    <View style={{ marginTop: 16 }}>
+    <View style={forms.fullWidth}>
       {/* 📝 Campo de texto si no es voz */}
       {!isVoice && (
         <View>
-          <Text style={{ fontWeight: "600", color: "#000", marginBottom: 6 }}>
-            📝 Escribe tu nota
-          </Text>
+          <Text style={text.blackButton}>📝 Escribe tu nota</Text>
           <TextInput
-            style={{
-              borderWidth: 1,
-              borderColor: "#ccc",
-              borderRadius: 8,
-              backgroundColor: "#fff",
-              padding: 10,
-              minHeight: 80,
-              textAlignVertical: "top",
-            }}
+            style={forms.input}
             multiline
             placeholder="Escribe aquí tu texto..."
             placeholderTextColor="#999"
@@ -135,159 +127,106 @@ export default function TextoVozOptions({
 
       {/* 🎙️ Opciones de voz */}
       {isVoice && (
-        <>
-          <Text style={{ fontWeight: "600", color: "#000" }}>🎙️ Nota de voz</Text>
+        <View>
+          <Text style={text.blackButton}>🎙️ Nota de voz</Text>
 
           {recording ? (
             <TouchableOpacity
               onPress={stopRecording}
-              style={{
-                marginTop: 10,
-                backgroundColor: "#EF4444",
-                padding: 10,
-                borderRadius: 8,
-                alignItems: "center",
-              }}
+              style={[forms.mediaBtn, { backgroundColor: "#EF4444" }]}
             >
-              <Text style={{ color: "#fff", fontWeight: "500" }}>⏹️ Detener grabación</Text>
+              <Text style={text.whiteButton}>⏹️ Detener grabación</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
               onPress={startRecording}
-              style={{
-                marginTop: 10,
-                backgroundColor: "#10B981",
-                padding: 10,
-                borderRadius: 8,
-                alignItems: "center",
-              }}
+              style={[forms.mediaBtn, { backgroundColor: "#10B981" }]}
             >
-              <Text style={{ color: "#fff", fontWeight: "500" }}>🎤 Iniciar grabación</Text>
+              <Text style={text.whiteButton}>🎤 Iniciar grabación</Text>
             </TouchableOpacity>
           )}
 
-          {/* Subir / reproducir */}
+          {/* ☁️ Subir / ▶️ Reproducir */}
           {valueText && !audioUrl && (
             <TouchableOpacity
               onPress={uploadAudio}
-              style={{
-                marginTop: 10,
-                borderWidth: 1,
-                borderColor: "#2563EB",
-                padding: 10,
-                borderRadius: 8,
-                alignItems: "center",
-              }}
+              style={buttons.blueOutline}
+              disabled={uploading}
             >
               {uploading ? (
-                <ActivityIndicator color="#2563EB" />
+                <ActivityIndicator color="#007AFF" />
               ) : (
-                <Text style={{ color: "#2563EB" }}>☁️ Subir grabación</Text>
+                <Text style={text.blackButton}>☁️ Subir grabación</Text>
               )}
             </TouchableOpacity>
           )}
 
           {(audioUrl || valueText) && (
-            <TouchableOpacity
-              onPress={playAudio}
-              style={{
-                marginTop: 10,
-                borderWidth: 1,
-                borderColor: "#10B981",
-                padding: 10,
-                borderRadius: 8,
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ color: "#10B981", fontWeight: "500" }}>▶️ Reproducir nota</Text>
+            <TouchableOpacity onPress={playAudio} style={buttons.greenOutline}>
+              <Text style={text.blackButton}>▶️ Reproducir nota</Text>
             </TouchableOpacity>
           )}
-        </>
+        </View>
       )}
 
       {/* 🔔 Modo Documentar / Recordatorio */}
-      <View style={{ marginTop: 16 }}>
-        <Text style={{ fontWeight: "600", color: "#000" }}>Modo</Text>
-        <View style={{ flexDirection: "row", marginTop: 6, gap: 8 }}>
-          <TouchableOpacity
-            onPress={() => setIsReminder(false)}
-            style={{
-              flex: 1,
-              paddingVertical: 10,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: !isReminder ? "#2563EB" : "#E5E7EB",
-              backgroundColor: !isReminder ? "#2563EB20" : "#fff",
-              alignItems: "center",
-            }}
+      <Text style={[text.blackButton, { marginTop: 16 }]}>Modo</Text>
+      <View style={forms.modeRow}>
+        <TouchableOpacity
+          onPress={() => setIsReminder(false)}
+          style={[
+            forms.modeBtn,
+            !isReminder && forms.modeBtnActiveBlue,
+          ]}
+        >
+          <Text
+            style={[
+              forms.modeText,
+              !isReminder && forms.modeTextActiveBlue,
+            ]}
           >
-            <Text
-              style={{
-                color: !isReminder ? "#2563EB" : "#374151",
-                fontWeight: "500",
-              }}
-            >
-              📝 Documentar
-            </Text>
-          </TouchableOpacity>
+            📝 Documentar
+          </Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => {
-              setIsReminder(true);
-              setShowReminderDatePicker(true);
-            }}
-            style={{
-              flex: 1,
-              paddingVertical: 10,
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: isReminder ? "#2563EB" : "#E5E7EB",
-              backgroundColor: isReminder ? "#2563EB20" : "#fff",
-              alignItems: "center",
-            }}
+        <TouchableOpacity
+          onPress={() => {
+            setIsReminder(true);
+            setShowReminderDatePicker(true);
+          }}
+          style={[
+            forms.modeBtn,
+            isReminder && forms.modeBtnActiveBlue,
+          ]}
+        >
+          <Text
+            style={[
+              forms.modeText,
+              isReminder && forms.modeTextActiveBlue,
+            ]}
           >
-            <Text
-              style={{
-                color: isReminder ? "#2563EB" : "#374151",
-                fontWeight: "500",
-              }}
-            >
-              ⏰ Recordatorio
-            </Text>
-          </TouchableOpacity>
-        </View>
+            ⏰ Recordatorio
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* 🗓️ Fecha y hora de recordatorio */}
+      {/* 🗓️ Fecha y hora del recordatorio */}
       {isReminder && (
-        <View style={{ marginTop: 12 }}>
+        <View>
           <TouchableOpacity
             onPress={() => setShowReminderDatePicker(true)}
-            style={{
-              borderWidth: 1,
-              borderColor: "#ccc",
-              borderRadius: 8,
-              padding: 10,
-              marginBottom: 6,
-              backgroundColor: "#fff",
-            }}
+            style={forms.input}
           >
-            <Text style={{ color: "#000" }}>
+            <Text style={text.blackButton}>
               📅 Fecha: {reminderDate.toLocaleDateString("es-CO")}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => setShowReminderTimePicker(true)}
-            style={{
-              borderWidth: 1,
-              borderColor: "#ccc",
-              borderRadius: 8,
-              padding: 10,
-              backgroundColor: "#fff",
-            }}
+            style={forms.input}
           >
-            <Text style={{ color: "#000" }}>
+            <Text style={text.blackButton}>
               ⏰ Hora:{" "}
               {reminderTime.toLocaleTimeString("es-CO", {
                 hour: "2-digit",
@@ -308,7 +247,6 @@ export default function TextoVozOptions({
             setShowReminderDatePicker(false);
             if (date) {
               setReminderDate(date);
-              // 👉 Abrir hora inmediatamente
               setTimeout(() => setShowReminderTimePicker(true), 300);
             }
           }}

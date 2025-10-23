@@ -163,7 +163,6 @@ export default function GroupScreen({ route }) {
           )
         );
       }
-      Alert.alert("Éxito", "Subgrupo clonado correctamente.");
     } catch (err) {
       console.error("Error clonando subgrupo:", err);
       Alert.alert("Error", "No se pudo clonar el subgrupo.");
@@ -181,7 +180,6 @@ export default function GroupScreen({ route }) {
           try {
             await deleteDoc(doc(db, "groups", id));
             await releaseQR(id);
-            console.log(`🗑️ Grupo eliminado y QR liberado: ${id}`);
           } catch (e) {
             console.error("Error eliminando subgrupo", e);
             Alert.alert("Error", "No se pudo eliminar el subgrupo.");
@@ -263,7 +261,7 @@ export default function GroupScreen({ route }) {
                 navigation={navigation}
                 groupId={groupId}
                 onPress={() =>
-                  navigation.navigate("GroupScreen", { groupId: item.id })
+                  navigation.push("Group", { groupId: item.id })
                 }
                 onEdit={() => {
                   setEditingGroupId(item.id);
@@ -361,7 +359,7 @@ export default function GroupScreen({ route }) {
         )}
       />
 
-      {/* 🧩 Modal reutilizado desde GroupModal */}
+      {/* 🧩 Modal Grupo */}
       <GroupModal
         visible={groupModalVisible}
         title={title}
@@ -378,6 +376,7 @@ export default function GroupScreen({ route }) {
         editing={!!editingGroupId}
       />
 
+      {/* 🧩 Modal Sección */}
       <SectionModal
         visible={sectionModalVisible}
         onClose={() => {
@@ -388,6 +387,7 @@ export default function GroupScreen({ route }) {
         editData={editingSection}
       />
 
+      {/* 🎨 Picker de Emoji */}
       {emojiPickerVisible && (
         <EmojiPicker
           visible={emojiPickerVisible}

@@ -1,3 +1,4 @@
+// components/GroupModal.jsx
 import React from "react";
 import {
   Modal,
@@ -9,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { groupModal, text } from "../styles/globalStyles";
+import { groupModal, forms, text } from "../styles/globalStyles";
 
 export default function GroupModal({
   visible,
@@ -31,7 +32,7 @@ export default function GroupModal({
       >
         <View style={groupModal.box}>
           {/* 🔹 Título del modal */}
-          <Text style={groupModal.title}>
+          <Text style={forms.title}>
             {editing ? "Editar grupo" : "Nuevo grupo"}
           </Text>
 
@@ -41,33 +42,34 @@ export default function GroupModal({
             placeholderTextColor="#888"
             value={title}
             onChangeText={setTitle}
-            style={groupModal.input}
+            style={forms.input}
             returnKeyType="done"
           />
 
           {/* 🔹 Botón para elegir emoji */}
           <TouchableOpacity
-            style={groupModal.chooseEmojiBtn}
+            style={forms.mediaBtn}
             onPress={openEmojiPicker}
+            disabled={isCreating}
           >
-            <Text style={{ fontSize: 18, color: "#000" }}>
+            <Text style={text.whiteButton}>
               {emoji ? `${emoji} Elegido` : "Elige un emoji"}
             </Text>
           </TouchableOpacity>
 
           {/* 🔹 Botones inferiores */}
-          <View style={groupModal.actionsRow}>
+          <View style={forms.modeRow}>
             <TouchableOpacity
               onPress={onClose}
-              style={groupModal.cancelBtn}
+              style={forms.cancelBtn}
               disabled={isCreating}
             >
-              <Text style={text.redButton}>Cancelar</Text>
+              <Text style={text.whiteButton}>Cancelar</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={onSave}
-              style={groupModal.saveBtn}
+              style={forms.saveBtn}
               disabled={isCreating}
             >
               {isCreating ? (

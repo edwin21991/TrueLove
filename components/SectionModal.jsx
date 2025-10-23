@@ -1,3 +1,4 @@
+// components/SectionModal.jsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -5,9 +6,10 @@ import {
   Modal,
   TextInput,
   TouchableOpacity,
-  Keyboard,
-  Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from "react-native";
 import {
   doc,
@@ -18,7 +20,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import EmojiPicker from "./EmojiPicker";
-import { sectionModal, text, colors } from "../styles/globalStyles";
+import { sectionModal, forms, text } from "../styles/globalStyles";
 
 export default function SectionModal({
   visible,
@@ -68,7 +70,6 @@ export default function SectionModal({
           emoji,
           updatedAt: serverTimestamp(),
         });
-        console.log(`✅ Sección actualizada (${editData.id})`);
       } else {
         // 🆕 Crear nueva sección
         await addDoc(collection(db, `groups/${groupId}/sections`), {
@@ -76,7 +77,6 @@ export default function SectionModal({
           emoji,
           createdAt: serverTimestamp(),
         });
-        console.log("✅ Nueva sección creada");
       }
 
       reset();
@@ -92,9 +92,12 @@ export default function SectionModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={sectionModal.backdrop}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={sectionModal.backdrop}
+      >
         <View style={sectionModal.box}>
-          <Text style={sectionModal.title}>
+          <Text style={forms.title}>
             {editData ? "Editar Sección" : "Nueva Sección"}
           </Text>
 
@@ -102,43 +105,40 @@ export default function SectionModal({
             placeholder="Título de la sección"
             value={title}
             onChangeText={setTitle}
-            style={sectionModal.input}
+            style={forms.input}
             placeholderTextColor="#888"
             returnKeyType="done"
-            onSubmitEditing={() => Keyboard.dismiss()}
           />
 
           <TouchableOpacity
-            style={sectionModal.chooseEmojiBtn}
-            onPress={() => {
-              Keyboard.dismiss();
-              setEmojiPickerVisible(true);
-            }}
+            style={forms.mediaBtn}
+            onPress={() => setEmojiPickerVisible(true)}
+            disabled={isSaving}
           >
-            <Text style={{ fontSize: 18, color: colors.dark }}>
+            <Text style={text.whiteButton}>
               {emoji ? `${emoji} Elegido` : "Elige un emoji"}
             </Text>
           </TouchableOpacity>
 
-          <View style={sectionModal.actionsRow}>
+          <View style={forms.modeRow}>
             <TouchableOpacity
               onPress={() => {
                 reset();
                 onClose();
               }}
-              style={sectionModal.cancelBtn}
+              style={forms.cancelBtn}
               disabled={isSaving}
             >
-              <Text style={text.redButton}>Cancelar</Text>
+              <Text style={text.whiteButton}>Cancelar</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={handleSave}
-              style={sectionModal.saveBtn}
+              style={forms.saveBtn}
               disabled={isSaving}
             >
               {isSaving ? (
-                <ActivityIndicator color={colors.light} />
+                <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={text.whiteButton}>
                   {editData ? "Guardar" : "Crear"}
@@ -147,7 +147,7 @@ export default function SectionModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
 
       {/* 🎨 Selector de emoji */}
       {emojiPickerVisible && (
