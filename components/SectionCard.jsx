@@ -7,6 +7,7 @@ import {
   Alert,
   Image,
   Dimensions,
+  Modal,
 } from "react-native";
 import {
   collection,
@@ -17,13 +18,13 @@ import {
   deleteDoc,
   doc,
   updateDoc,
-  getDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
 import FieldCreator from "../components/FieldCreator/FieldCreator";
 import { Audio } from "expo-av";
+import { Video } from "expo-av";
 import QRManagerModal from "./QRManagerModal";
-import { cards, buttons, text, fields } from "../styles/globalStyles";
+import { cards, buttons, text, fields, mediaModal } from "../styles/globalStyles";
 
 const { width } = Dimensions.get("window");
 
@@ -64,8 +65,11 @@ export default function SectionCard({
   const [editingField, setEditingField] = useState(null);
   const [sound, setSound] = useState(null);
   const [qrVisible, setQrVisible] = useState(false);
+  const [mediaVisible, setMediaVisible] = useState(false);
+  const [mediaType, setMediaType] = useState(null);
+  const [mediaUri, setMediaUri] = useState(null);
 
-  // 🔄 Escuchar todos los campos de la sección
+  // 🔄 Escuchar los campos de la sección
   useEffect(() => {
     if (!groupId || !item?.id) return;
     const q = query(
@@ -73,7 +77,7 @@ export default function SectionCard({
       orderBy("createdAt", "asc")
     );
 
-    const unsub = onSnapshot(q, async (snap) => {
+    const unsub = onSnapshot(q, (snap) => {
       const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       setFieldsData(arr);
     });
@@ -92,30 +96,23 @@ export default function SectionCard({
     }
   }
 
-  // 🧠 Cálculo dinámico de resultados
+  // 🧮 Recalcular resultados dinámicos
   useEffect(() => {
     async function recalcularResultados() {
       const resultados = fieldsData.filter((f) => f.options?.modo === "resultado");
-
       for (const res of resultados) {
         const baseIds = res.options?.baseFields || [];
         const op = res.options?.op;
-
         if (baseIds.length !== 2 || !op) continue;
 
         try {
           const [id1, id2] = baseIds;
-          let base1, base2;
-
-          // Buscar los valores base directamente en el array de fields
-          base1 = fieldsData.find((f) => f.id === id1);
-          base2 = fieldsData.find((f) => f.id === id2);
-
+          const base1 = fieldsData.find((f) => f.id === id1);
+          const base2 = fieldsData.find((f) => f.id === id2);
           if (!base1 || !base2) continue;
 
           const v1 = parseFloat(base1.options?.valor || 0);
           const v2 = parseFloat(base2.options?.valor || 0);
-
           let resultado = 0;
           switch (op) {
             case "suma":
@@ -137,13 +134,10 @@ export default function SectionCard({
 
           const valorFinal = esDinero ? Number(resultado.toFixed(2)) : resultado;
 
-          // Actualizar si cambió el valor
           if (res.options?.valor !== valorFinal) {
             await updateDoc(
               doc(db, `groups/${groupId}/sections/${item.id}/fields/${res.id}`),
-              {
-                "options.valor": valorFinal,
-              }
+              { "options.valor": valorFinal }
             );
           }
         } catch (e) {
@@ -151,7 +145,6 @@ export default function SectionCard({
         }
       }
     }
-
     if (fieldsData.length > 0) recalcularResultados();
   }, [fieldsData]);
 
@@ -159,14 +152,11 @@ export default function SectionCard({
   async function eliminarCampoResultado(f) {
     try {
       await deleteDoc(doc(db, `groups/${groupId}/sections/${item.id}/fields/${f.id}`));
-      // Restaurar campo base a "documentar"
       const baseId = f.options?.baseFields?.[0];
       if (baseId) {
         await updateDoc(
           doc(db, `groups/${groupId}/sections/${item.id}/fields/${baseId}`),
-          {
-            "options.modo": "documentar",
-          }
+          { "options.modo": "documentar" }
         );
       }
     } catch (e) {
@@ -185,10 +175,8 @@ export default function SectionCard({
           marginBottom: 6,
         }}
       >
-        <Text style={[text.title, { color: "#000" }]}>
-          {item.emoji ? (
-            <Text style={text.sectionEmoji}>{item.emoji}</Text>
-          ) : null}{" "}
+        <Text style={[text.title, { color: "#000", textAlign: "left" }]}>
+          {item.emoji ? <Text style={text.sectionEmoji}>{item.emoji}</Text> : null}{" "}
           {item.title}
         </Text>
         <TouchableOpacity onPress={() => setQrVisible(true)} style={buttons.qrIcon}>
@@ -229,19 +217,42 @@ export default function SectionCard({
               <View key={f.id} style={fields.card}>
                 <View style={fields.row}>
                   <Text style={fields.title}>{f.title}:</Text>
+
+                  {/* 📸 Mostrar miniatura o valor */}
                   {f.type === "foto" && f.options?.valor ? (
-                    <Image source={{ uri: f.options.valor }} style={fields.thumb} />
+                    <TouchableOpacity
+                      onPress={() => {
+                        setMediaUri(f.options.valor);
+                        setMediaType("foto");
+                        setMediaVisible(true);
+                      }}
+                    >
+                      <Image
+                        source={{ uri: f.options.valor }}
+                        style={{ width: 50, height: 50, borderRadius: 8 }}
+                      />
+                    </TouchableOpacity>
                   ) : f.type === "voz" ? (
                     <TouchableOpacity onPress={() => reproducirAudio(f.options?.valor)}>
                       <Text style={text.link}>▶️ Reproducir</Text>
+                    </TouchableOpacity>
+                  ) : f.type === "video" ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setMediaUri(f.options.valor);
+                        setMediaType("video");
+                        setMediaVisible(true);
+                      }}
+                    >
+                      <Text style={text.link}>▶️ Ver video</Text>
                     </TouchableOpacity>
                   ) : (
                     <Text style={fields.value}>{valorMostrado}</Text>
                   )}
                 </View>
 
-                {/* 🧭 Íconos */}
-                <View style={fields.iconsRight}>
+                {/* 🧭 Íconos a la derecha, horizontales */}
+                <View style={[fields.iconsRight, { flexDirection: "row" }]}>
                   {!esResultado && (
                     <>
                       <TouchableOpacity onPress={() => setEditingField(f)}>
@@ -280,8 +291,6 @@ export default function SectionCard({
                       </TouchableOpacity>
                     </>
                   )}
-
-                  {/* 🗑️ Solo eliminar para resultados */}
                   {esResultado && (
                     <TouchableOpacity
                       onPress={() =>
@@ -312,7 +321,7 @@ export default function SectionCard({
         <Text style={text.greenButton}>+ Crear nuevo campo</Text>
       </TouchableOpacity>
 
-      {/* 🧩 Acciones de sección */}
+      {/* 🧩 Acciones de sección (alineadas a la derecha) */}
       <View
         style={{
           flexDirection: "row",
@@ -353,6 +362,29 @@ export default function SectionCard({
         entityId={item.id}
         groupId={groupId}
       />
+
+      {/* 🎥 Modal multimedia */}
+      <Modal visible={mediaVisible} transparent animationType="fade">
+        <View style={mediaModal.backdrop}>
+          <TouchableOpacity
+            style={mediaModal.closeBtn}
+            onPress={() => setMediaVisible(false)}
+          >
+            <Text style={mediaModal.closeText}>✖</Text>
+          </TouchableOpacity>
+
+          {mediaType === "foto" ? (
+            <Image source={{ uri: mediaUri }} style={mediaModal.image} />
+          ) : mediaType === "video" ? (
+            <Video
+              source={{ uri: mediaUri }}
+              useNativeControls
+              resizeMode="contain"
+              style={mediaModal.video}
+            />
+          ) : null}
+        </View>
+      </Modal>
     </View>
   );
 }

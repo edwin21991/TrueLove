@@ -487,3 +487,34 @@ export const numeric = StyleSheet.create({
     marginBottom: 14,
   },
 });
+
+/* 🎥 Modal multimedia (imágenes / videos) */
+export const mediaModal = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  closeBtn: {
+    position: "absolute",
+    top: 30,
+    right: 20,
+    zIndex: 20,
+  },
+  closeText: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+  image: {
+    width: "90%",
+    height: "80%",
+    borderRadius: 12,
+  },
+  video: {
+    width: "90%",
+    height: "70%",
+    borderRadius: 12,
+  },
+});
