@@ -3,13 +3,13 @@ import React, { useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { NavigationContainer } from "@react-navigation/native";
 import { LogBox } from "react-native";
-import { registerForPushNotificationsAsync } from "./utils/notifications";
+import { registerForPushNotificationsAsync } from "../utils/notifications";
 
 // 🖥️ Pantallas
-import HomeScreen from "./screens/HomeScreen";
-import GroupScreen from "./screens/GroupScreen";
-import SectionScreen from "./screens/SectionScreen";
-import QRScreen from "./screens/QRScreen"; // ✅ Pantalla de prueba simple
+import HomeScreen from "../screens/HomeScreen";
+import GroupScreen from "../screens/GroupScreen";
+import SectionScreen from "../screens/SectionScreen";
+import QRScreen from "../screens/QRScreen"; // ✅ Pantalla de prueba simple
 
 LogBox.ignoreAllLogs(true);
 const Stack = createNativeStackNavigator();
