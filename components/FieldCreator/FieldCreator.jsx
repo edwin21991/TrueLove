@@ -71,6 +71,7 @@ export default function FieldCreator({
 
   // 🧩 Cargar datos al editar
   function loadEditData(data) {
+    if (!data) return;
     setTitle(data.title || "");
     setType(data.type || null);
     const opts = data.options || {};
@@ -99,8 +100,10 @@ export default function FieldCreator({
       }
     }
 
-    if (data.type === "foto" || data.type === "video")
+    if (data.type === "foto" || data.type === "video") {
       setMediaUri(opts.valor || null);
+    }
+
     setIsFormValid(true);
   }
 
@@ -125,8 +128,11 @@ export default function FieldCreator({
   // ⚡ Cuando se abre el modal
   useEffect(() => {
     if (visible) {
-      if (editData) loadEditData(editData);
-      else reset();
+      if (editData) {
+        loadEditData(editData);
+      } else {
+        reset();
+      }
     }
   }, [visible, editData]);
 
@@ -199,6 +205,7 @@ export default function FieldCreator({
         fieldDoc.options = { valor: mediaUri };
       }
 
+      // 🔹 Si estamos editando, actualizamos en lugar de crear nuevo
       let savedRef;
       if (editData?.id) {
         const refDoc = doc(
@@ -214,7 +221,7 @@ export default function FieldCreator({
         );
       }
 
-      // 🔹 Si es un campo de operación, crear campo de resultado automáticamente
+      // 🔹 Campo de operación
       if ((type === "número" || type === "dinero") && numMode === "operar" && targetFieldId) {
         const targetFieldSnap = await getDoc(
           doc(db, `groups/${groupId}/sections/${sectionId}/fields/${targetFieldId}`)
@@ -229,7 +236,6 @@ export default function FieldCreator({
             dividir: "÷",
           };
           const simbolo = opSimbolos[operation] || "?";
-
           const esDinero =
             type === "dinero" || targetField.type === "dinero";
 
@@ -305,10 +311,14 @@ export default function FieldCreator({
                     onPress={() => setType(btn.key)}
                     disabled={!!editData}
                   >
-                    <Text>{btn.icon} {btn.key}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Text style={text.blackButton}>{btn.icon}</Text>
+                      <Text style={text.blackButton}>{btn.key.charAt(0).toUpperCase() + btn.key.slice(1)}</Text>
+                    </View>
                   </TouchableOpacity>
                 ))}
               </View>
+
 
               {/* ⚙️ Opciones según tipo */}
               <FechaOptions

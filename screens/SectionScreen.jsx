@@ -102,6 +102,7 @@ export default function SectionScreen({ route, navigation }) {
   }
 
   // ✏️ Editar campo
+  // ✏️ Editar campo (corregido)
   async function handleEditField(fieldId) {
     try {
       console.log("✏️ Editando campo:", fieldId);
@@ -109,12 +110,18 @@ export default function SectionScreen({ route, navigation }) {
       const snap = await getDoc(ref);
       if (!snap.exists()) return;
 
-      setEditingField({ id: fieldId, ...snap.data() });
-      setCreatorVisible(true);
+      const data = { id: fieldId, ...snap.data() };
+      setEditingField(data);
+
+      // 🕒 Pequeño delay para asegurar que el estado se actualice antes de abrir el modal
+      setTimeout(() => {
+        setCreatorVisible(true);
+      }, 50);
     } catch (e) {
       console.error("❌ Error cargando campo para editar", e);
     }
   }
+
 
   // ▶️ Reproducir nota de voz
   async function playAudio(field) {

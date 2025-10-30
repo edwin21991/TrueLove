@@ -255,9 +255,17 @@ export default function SectionCard({
                 <View style={[fields.iconsRight, { flexDirection: "row" }]}>
                   {!esResultado && (
                     <>
-                      <TouchableOpacity onPress={() => setEditingField(f)}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          console.log("✏️ Editar campo presionado:", f.id);
+                          setEditingField(f);
+                          // 🕒 Esperamos un poquito para asegurar que se guarde el estado antes de abrir el modal
+                          setTimeout(() => setCreatorVisible(true), 50);
+                        }}
+                      >
                         <Text style={[text.icon, { color: "#ff9500" }]}>✏️</Text>
                       </TouchableOpacity>
+
 
                       <TouchableOpacity
                         onPress={async () => {
