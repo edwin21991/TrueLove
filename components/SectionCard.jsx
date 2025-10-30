@@ -23,7 +23,7 @@ import { db } from "../firebase";
 import FieldCreator from "../components/FieldCreator/FieldCreator";
 import { Audio } from "expo-av";
 import { Video } from "expo-av";
-import QRManagerModal from "./QRManagerModal";
+import QRManagerModal from "./QRManagerModal"; // ✅ Modal central unificado
 import { cards, buttons, text, fields, mediaModal } from "../styles/globalStyles";
 
 const { width } = Dimensions.get("window");
@@ -131,7 +131,6 @@ export default function SectionCard({
 
           const esDinero =
             base1.type === "dinero" || base2.type === "dinero" || res.type === "dinero";
-
           const valorFinal = esDinero ? Number(resultado.toFixed(2)) : resultado;
 
           if (res.options?.valor !== valorFinal) {
@@ -187,14 +186,11 @@ export default function SectionCard({
       {/* --- Campos --- */}
       <View style={{ marginTop: 4 }}>
         {fieldsData.length === 0 ? (
-          <Text style={[text.subtitle, { textAlign: "center" }]}>
-            Sin campos todavía
-          </Text>
+          <Text style={[text.subtitle, { textAlign: "center" }]}>Sin campos todavía</Text>
         ) : (
           fieldsData.map((f) => {
             const v = f.options?.valor;
             let valorMostrado = "-";
-
             if (
               f.type === "fecha_regresiva" ||
               (f.type === "fecha" && f.options?.modo === "regresiva")
@@ -202,8 +198,7 @@ export default function SectionCard({
               valorMostrado = calcularCuentaRegresiva(v);
             else if (f.type === "fecha")
               valorMostrado = v ? new Date(v).toLocaleDateString("es-CO") : "-";
-            else if (f.type === "número")
-              valorMostrado = v?.toLocaleString("es-CO") ?? "0";
+            else if (f.type === "número") valorMostrado = v?.toLocaleString("es-CO") ?? "0";
             else if (f.type === "dinero")
               valorMostrado = v != null ? formatoDinero(v) : "$0";
             else if (f.type === "texto") valorMostrado = v ?? "-";
@@ -251,21 +246,18 @@ export default function SectionCard({
                   )}
                 </View>
 
-                {/* 🧭 Íconos a la derecha, horizontales */}
+                {/* 🧭 Íconos a la derecha */}
                 <View style={[fields.iconsRight, { flexDirection: "row" }]}>
                   {!esResultado && (
                     <>
                       <TouchableOpacity
                         onPress={() => {
-                          console.log("✏️ Editar campo presionado:", f.id);
                           setEditingField(f);
-                          // 🕒 Esperamos un poquito para asegurar que se guarde el estado antes de abrir el modal
                           setTimeout(() => setCreatorVisible(true), 50);
                         }}
                       >
                         <Text style={[text.icon, { color: "#ff9500" }]}>✏️</Text>
                       </TouchableOpacity>
-
 
                       <TouchableOpacity
                         onPress={async () => {
@@ -329,7 +321,7 @@ export default function SectionCard({
         <Text style={text.greenButton}>+ Crear nuevo campo</Text>
       </TouchableOpacity>
 
-      {/* 🧩 Acciones de sección (alineadas a la derecha) */}
+      {/* 🧩 Acciones de sección */}
       <View
         style={{
           flexDirection: "row",
@@ -362,7 +354,7 @@ export default function SectionCard({
         editData={editingField}
       />
 
-      {/* ✅ Modal QR */}
+      {/* ✅ Modal QR unificado */}
       <QRManagerModal
         visible={qrVisible}
         onClose={() => setQrVisible(false)}

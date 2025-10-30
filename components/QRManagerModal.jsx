@@ -8,17 +8,17 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+import * as Sharing from "expo-sharing";
 import QRCode from "react-native-qrcode-svg";
 import ViewShot from "react-native-view-shot";
 import {
   assignQR,
   changeQR,
   generateQRPayload,
-  downloadQRImage,
 } from "../utils/qrManager";
 import { db } from "../firebase";
 import { collection, getDocs, where, query } from "firebase/firestore";
-import { forms, buttons, text, colors, utils } from "../styles/globalStyles";
+import { forms, buttons, text, colors } from "../styles/globalStyles";
 
 export default function QRManagerModal({
   visible,
@@ -31,13 +31,14 @@ export default function QRManagerModal({
   const [loading, setLoading] = useState(false);
   const [freeQRCodes, setFreeQRCodes] = useState([]);
   const [qrListVisible, setQrListVisible] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
   const qrRef = useRef(null);
 
   useEffect(() => {
     if (visible) loadOrAssignQR();
   }, [visible]);
 
-  // 🧩 Cargar o asignar QR
+  // 📦 Cargar o asignar QR automáticamente
   async function loadOrAssignQR() {
     try {
       setLoading(true);
@@ -50,19 +51,34 @@ export default function QRManagerModal({
     }
   }
 
-  // 💾 Descargar QR con su número consecutivo
-  async function handleDownloadQR() {
+  // 📸 Descargar o compartir QR (versión funcional original)
+  const handleDownloadQR = async () => {
     try {
-      if (!qrData?.code)
-        return Alert.alert("Error", "No se encontró el código del QR.");
-      const base64 = await new Promise((resolve) =>
-        qrRef.current.toDataURL(resolve)
-      );
-      await downloadQRImage(base64, qrData.code);
-    } catch {
-      Alert.alert("Error", "No se pudo guardar la imagen del QR.");
+      if (isCapturing) return;
+      setIsCapturing(true);
+
+      if (!qrRef.current) {
+        Alert.alert("Error", "El QR aún no está listo para capturarse.");
+        return;
+      }
+
+      console.log("📸 Capturando QR...");
+      const uri = await qrRef.current.capture();
+      console.log("✅ Captura lista:", uri);
+
+      if (uri) {
+        await Sharing.shareAsync(uri);
+        console.log("📤 QR compartido correctamente");
+      } else {
+        Alert.alert("Error", "No se pudo generar la imagen del QR.");
+      }
+    } catch (error) {
+      console.error("❌ Error al guardar QR:", error);
+      Alert.alert("Error", "No se pudo guardar ni compartir el código QR.");
+    } finally {
+      setIsCapturing(false);
     }
-  }
+  };
 
   // 🔁 Cambiar QR
   async function handleChangeQR(newQRId = null) {
@@ -71,6 +87,7 @@ export default function QRManagerModal({
       const newQR = await changeQR(entityType, entityId);
       setQrData(newQR);
       setQrListVisible(false);
+      Alert.alert("Éxito", "QR cambiado correctamente.");
     } catch (e) {
       Alert.alert("Error", e.message || "No se pudo cambiar el QR.");
     } finally {
@@ -78,17 +95,18 @@ export default function QRManagerModal({
     }
   }
 
-  // 🔍 Cargar QR disponibles
+  // 📋 Cargar lista de QR disponibles
   async function loadFreeQRCodes() {
     try {
       const q = query(collection(db, "qrCodes"), where("available", "==", true));
       const snap = await getDocs(q);
-      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setFreeQRCodes(list);
+      setFreeQRCodes(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     } catch {
       Alert.alert("Error", "No se pudieron cargar los QR disponibles.");
     }
   }
+
+  console.log("🧭 Modal QRManager cargado:", entityType);
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -100,18 +118,21 @@ export default function QRManagerModal({
             <ActivityIndicator color={colors.primary} />
           ) : qrData ? (
             <>
-              {/* 🔹 Contenedor del QR + consecutivo */}
               <ViewShot
+                ref={qrRef}
                 options={{ format: "png", quality: 1 }}
-                style={{ alignItems: "center" }}
+                style={{
+                  alignItems: "center",
+                  backgroundColor: "#fff",
+                  padding: 15,
+                  borderRadius: 12,
+                }}
               >
                 <QRCode
-                  getRef={(r) => (qrRef.current = r)}
-                  value={generateQRPayload(entityType, entityId, groupId)}
+                  value={generateQRPayload(entityType, entityId, groupId || "")}
                   size={200}
                   backgroundColor="white"
                 />
-                {/* 🔹 Mostrar consecutivo visualmente */}
                 <Text
                   style={{
                     color: colors.dark,
@@ -123,54 +144,109 @@ export default function QRManagerModal({
                   {qrData.code}
                 </Text>
               </ViewShot>
+
+              {/* 🔘 Botones horizontales (versión estable) */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  width: "100%",
+                  marginTop: 25,
+                }}
+              >
+                {/* Descargar QR */}
+                <TouchableOpacity
+                  onPress={handleDownloadQR}
+                  disabled={isCapturing}
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#E7FBEA",
+                    borderColor: "#00C851",
+                    borderWidth: 2,
+                    borderRadius: 12,
+                    paddingVertical: 14,
+                    paddingHorizontal:8,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#00C851",
+                      fontWeight: "700",
+                      fontSize: 12,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {isCapturing ? "Guardando..." : "Descargar"}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Cambiar QR */}
+                <TouchableOpacity
+                  onPress={async () => {
+                    await loadFreeQRCodes();
+                    setQrListVisible(true);
+                  }}
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#E7F0FB",
+                    borderColor: "#007AFF",
+                    borderWidth: 2,
+                    borderRadius: 12,
+                    paddingVertical: 14,
+                    paddingHorizontal:8,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginHorizontal: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#007AFF",
+                      fontWeight: "700",
+                      fontSize: 12,
+                    }}
+                    numberOfLines={1}
+                  >
+                    Cambiar QR
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Cerrar */}
+                <TouchableOpacity
+                  onPress={onClose}
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#FFECEC",
+                    borderColor: "#ff3b30",
+                    borderWidth: 2,
+                    borderRadius: 12,
+                    paddingVertical: 14,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: 6,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#ff3b30",
+                      fontWeight: "700",
+                      fontSize: 12,
+                    }}
+                    numberOfLines={1}
+                  >
+                    Cerrar
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
             </>
           ) : (
-            <Text style={[text.subtitle, { color: "#666" }]}>
-              Sin QR asignado
-            </Text>
+            <Text style={[text.subtitle, { color: "#666" }]}>Sin QR asignado</Text>
           )}
-
-          {/* 🔘 Botones principales */}
-          <View
-            style={[
-              utils.row,
-              {
-                justifyContent: "space-between",
-                width: "100%",
-                marginTop: 25,
-                gap: 10,
-              },
-            ]}
-          >
-            <TouchableOpacity
-              style={[buttons.greenOutline, { flex: 1 }]}
-              onPress={handleDownloadQR}
-              disabled={loading}
-            >
-              <Text style={text.greenButton}>Descargar</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[buttons.blueOutline, { flex: 1 }]}
-              onPress={async () => {
-                await loadFreeQRCodes();
-                setQrListVisible(true);
-              }}
-              disabled={loading}
-            >
-              <Text style={{ color: "#007AFF", fontWeight: "700" }}>
-                Cambiar
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[buttons.redOutline, { flex: 1 }]}
-              onPress={onClose}
-              disabled={loading}
-            >
-              <Text style={text.redButton}>Cerrar</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
 
@@ -179,7 +255,6 @@ export default function QRManagerModal({
         <View style={forms.backdrop}>
           <View style={[forms.box, { maxHeight: "70%", width: "85%" }]}>
             <Text style={forms.title}>Seleccionar QR disponible</Text>
-
             {freeQRCodes.length === 0 ? (
               <Text style={text.subtitle}>No hay QR disponibles.</Text>
             ) : (
@@ -200,7 +275,6 @@ export default function QRManagerModal({
                 )}
               />
             )}
-
             <TouchableOpacity
               style={[buttons.redOutline, { marginTop: 10 }]}
               onPress={() => setQrListVisible(false)}

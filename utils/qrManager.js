@@ -149,18 +149,33 @@ export function generateQRPayload(type, id, groupId = null) {
 
 /* ============================================================================
    🔹 Descargar el QR como imagen con su nombre (ej: QR007.png)
-   - Requiere un URI base64 del QR generado con react-native-qrcode-svg
+   - Soporta base64 o URI directa desde ViewShot.capture()
 ============================================================================ */
-export async function downloadQRImage(base64Data, code = "QR") {
+export async function downloadQRImage(data, code = "QR") {
   try {
-    // ✅ Guarda con el código en el nombre (ej: QR005.png)
     const fileUri = `${FileSystem.cacheDirectory}${code}.png`;
-    await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
+
+    // 🔹 Detectar si el dato es Base64 o URI
+    if (data.startsWith("file://") || data.startsWith("data:image")) {
+      // Guardar usando la URI directa (ViewShot ya devuelve una ruta)
+      const sourceUri = data.startsWith("file://") ? data : fileUri;
+      if (data.startsWith("data:image")) {
+        await FileSystem.writeAsStringAsync(fileUri, data.replace(/^data:image\/png;base64,/, ""), {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      }
+    } else {
+      // Si llega puro Base64 sin prefijo
+      await FileSystem.writeAsStringAsync(fileUri, data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+    }
+
+    // 📤 Compartir el archivo (descargar / compartir)
     await Sharing.shareAsync(fileUri);
     console.log(`📤 QR descargado como ${code}.png`);
   } catch (err) {
     console.error("❌ Error al descargar QR:", err);
   }
 }
+
