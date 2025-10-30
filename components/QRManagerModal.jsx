@@ -82,18 +82,19 @@ export default function QRManagerModal({
 
   // 🔁 Cambiar QR
   async function handleChangeQR(newQRId = null) {
-    try {
-      setLoading(true);
-      const newQR = await changeQR(entityType, entityId);
-      setQrData(newQR);
-      setQrListVisible(false);
-      Alert.alert("Éxito", "QR cambiado correctamente.");
-    } catch (e) {
-      Alert.alert("Error", e.message || "No se pudo cambiar el QR.");
-    } finally {
-      setLoading(false);
-    }
+  try {
+    setLoading(true);
+    const newQR = await changeQR(entityType, entityId, newQRId);
+    setQrData(newQR);
+    setQrListVisible(false);
+    Alert.alert("Éxito", "QR cambiado correctamente.");
+  } catch (e) {
+    Alert.alert("Error", e.message || "No se pudo cambiar el QR.");
+  } finally {
+    setLoading(false);
   }
+}
+
 
   // 📋 Cargar lista de QR disponibles
   async function loadFreeQRCodes() {
@@ -105,9 +106,6 @@ export default function QRManagerModal({
       Alert.alert("Error", "No se pudieron cargar los QR disponibles.");
     }
   }
-
-  console.log("🧭 Modal QRManager cargado:", entityType);
-
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={forms.backdrop}>

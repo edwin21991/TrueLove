@@ -220,32 +220,37 @@ export default function GroupScreen({ route }) {
   }
 
   async function handleDeleteSection(sectionId) {
-    Alert.alert("Eliminar sección", "¿Seguro que deseas eliminar esta sección y todos sus campos?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            const fieldsSnap = await getDocs(
-              collection(db, `groups/${groupId}/sections/${sectionId}/fields`)
-            );
-            await Promise.all(
-              fieldsSnap.docs.map((f) =>
-                deleteDoc(
-                  doc(db, `groups/${groupId}/sections/${sectionId}/fields/${f.id}`)
-                )
+  Alert.alert("Eliminar sección", "¿Seguro que deseas eliminar esta sección y todos sus campos?", [
+    { text: "Cancelar", style: "cancel" },
+    {
+      text: "Eliminar",
+      style: "destructive",
+      onPress: async () => {
+        try {
+          const fieldsSnap = await getDocs(
+            collection(db, `groups/${groupId}/sections/${sectionId}/fields`)
+          );
+          await Promise.all(
+            fieldsSnap.docs.map((f) =>
+              deleteDoc(
+                doc(db, `groups/${groupId}/sections/${sectionId}/fields/${f.id}`)
               )
-            );
-            await deleteDoc(doc(db, `groups/${groupId}/sections/${sectionId}`));
-          } catch (e) {
-            console.error("delete section", e);
-            Alert.alert("Error", "No se pudo eliminar la sección.");
-          }
-        },
+            )
+          );
+          await deleteDoc(doc(db, `groups/${groupId}/sections/${sectionId}`));
+
+          // ✅ Liberar QR de la sección eliminada
+          await releaseQR(sectionId);
+
+        } catch (e) {
+          console.error("delete section", e);
+          Alert.alert("Error", "No se pudo eliminar la sección.");
+        }
       },
-    ]);
-  }
+    },
+  ]);
+}
+
 
   const ListHeader = () => (
     <View>

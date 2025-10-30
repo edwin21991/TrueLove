@@ -21,6 +21,7 @@ import {
   deleteDoc,
   updateDoc,
 } from "firebase/firestore";
+import { releaseQR } from "../utils/qrManager";
 import { db } from "../firebase";
 import { emojiList } from "../utils/emojiList";
 import { useNavigation } from "@react-navigation/native";
@@ -163,23 +164,32 @@ export default function HomeScreen() {
     }
   }
 
-  // 🗑️ Borrar grupo
-  async function deleteGroupById(id) {
-    Alert.alert("Confirmar", "¿Eliminar este grupo?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteDoc(doc(db, "groups", id));
-          } catch {
-            Alert.alert("Error al borrar grupo");
-          }
-        },
+
+// 🗑️ Borrar grupo + liberar QR
+async function deleteGroupById(id) {
+  Alert.alert("Confirmar", "¿Eliminar este grupo?", [
+    { text: "Cancelar", style: "cancel" },
+    {
+      text: "Eliminar",
+      style: "destructive",
+      onPress: async () => {
+        try {
+          // 1️⃣ Borrar el grupo
+          await deleteDoc(doc(db, "groups", id));
+
+          // 2️⃣ Liberar su QR
+          await releaseQR(id);
+
+          console.log(`♻️ Grupo eliminado y QR liberado (${id})`);
+        } catch (e) {
+          console.error("Error al borrar grupo", e);
+          Alert.alert("Error al borrar grupo");
+        }
       },
-    ]);
-  }
+    },
+  ]);
+}
+
 
   return (
     <SafeAreaView

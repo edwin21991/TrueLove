@@ -7,6 +7,7 @@ import {
   getDocs,
   updateDoc,
   doc,
+  getDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import * as FileSystem from "expo-file-system";
@@ -15,13 +16,10 @@ import { db } from "../firebase";
 
 /* ============================================================================
    🔹 Asignar un QR libre o mantener el existente
-   - Si la entidad ya tiene QR → lo devuelve.
-   - Si no tiene → busca uno libre.
-   - Si no hay disponibles → crea uno nuevo consecutivo.
 ============================================================================ */
 export async function assignQR(entityType, entityId) {
   try {
-    // 1️⃣ Verificar si la entidad ya tiene un QR asignado
+    // 1️⃣ Verificar si la entidad ya tiene QR
     const existingQ = query(
       collection(db, "qrCodes"),
       where("assignedTo", "==", entityId)
@@ -33,14 +31,14 @@ export async function assignQR(entityType, entityId) {
       return { id: qrDoc.id, ...qrDoc.data() };
     }
 
-    // 2️⃣ Buscar un QR libre (available == true)
+    // 2️⃣ Buscar QR libre
     const q = query(collection(db, "qrCodes"), where("available", "==", true));
     const snap = await getDocs(q);
 
     let qrDocData = null;
 
     if (!snap.empty) {
-      // ✅ Reutilizar el primer QR libre
+      // ✅ Reutilizar uno libre
       const qrDoc = snap.docs[0];
       await updateDoc(doc(db, "qrCodes", qrDoc.id), {
         available: false,
@@ -49,8 +47,9 @@ export async function assignQR(entityType, entityId) {
         updatedAt: serverTimestamp(),
       });
       qrDocData = { id: qrDoc.id, ...qrDoc.data(), assignedTo: entityId };
+      console.log(`🔁 QR libre asignado → ${qrDoc.data().code}`);
     } else {
-      // 🚀 Crear un nuevo QR si no hay libres
+      // 🚀 Crear uno nuevo
       const newCode = await getNextCode();
       const newDocRef = await addDoc(collection(db, "qrCodes"), {
         code: newCode,
@@ -65,6 +64,7 @@ export async function assignQR(entityType, entityId) {
         assignedTo: entityId,
         assignedType: entityType,
       };
+      console.log(`🆕 Nuevo QR creado → ${newCode}`);
     }
 
     return qrDocData;
@@ -75,7 +75,7 @@ export async function assignQR(entityType, entityId) {
 }
 
 /* ============================================================================
-   🔹 Liberar un QR cuando se elimina un grupo o sección
+   🔹 Liberar QR cuando se elimina un grupo o sección
 ============================================================================ */
 export async function releaseQR(entityId) {
   try {
@@ -99,16 +99,18 @@ export async function releaseQR(entityId) {
 
 /* ============================================================================
    🔹 Cambiar QR manualmente
-   - Libera el actual y asigna uno nuevo.
-   - Si no hay libres, crea uno nuevo automáticamente.
+   - Libera el actual.
+   - Si se pasa un ID específico → asigna ese QR libre.
+   - Si no, asigna uno libre o crea uno nuevo.
 ============================================================================ */
-export async function changeQR(entityType, entityId) {
+export async function changeQR(entityType, entityId, newQRId = null) {
   try {
-    // 1️⃣ Liberar QR actual
-    const q = query(collection(db, "qrCodes"), where("assignedTo", "==", entityId));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const oldQR = snap.docs[0];
+    // 1️⃣ Liberar el actual
+    const currentQ = query(collection(db, "qrCodes"), where("assignedTo", "==", entityId));
+    const currentSnap = await getDocs(currentQ);
+
+    if (!currentSnap.empty) {
+      const oldQR = currentSnap.docs[0];
       await updateDoc(doc(db, "qrCodes", oldQR.id), {
         available: true,
         assignedTo: null,
@@ -118,10 +120,34 @@ export async function changeQR(entityType, entityId) {
       console.log(`♻️ QR liberado: ${oldQR.data().code}`);
     }
 
-    // 2️⃣ Asignar uno nuevo (si no hay libres se crea)
-    const newQR = await assignQR(entityType, entityId);
-    console.log(`✅ QR cambiado → ${newQR.code}`);
-    return newQR;
+    // 2️⃣ Asignar el nuevo
+    let newQRData = null;
+
+    if (newQRId) {
+      const selectedRef = doc(db, "qrCodes", newQRId);
+      const selectedSnap = await getDoc(selectedRef);
+
+      if (!selectedSnap.exists()) throw new Error("QR no encontrado.");
+
+      const qrData = selectedSnap.data();
+
+      if (!qrData.available)
+        throw new Error("Este QR ya está asignado y no puede usarse.");
+
+      await updateDoc(selectedRef, {
+        available: false,
+        assignedTo: entityId,
+        assignedType: entityType,
+        updatedAt: serverTimestamp(),
+      });
+
+      newQRData = { id: selectedSnap.id, ...qrData, assignedTo: entityId };
+      console.log(`✅ QR cambiado manualmente → ${qrData.code}`);
+    } else {
+      newQRData = await assignQR(entityType, entityId);
+    }
+
+    return newQRData;
   } catch (err) {
     console.error("❌ Error en changeQR:", err);
     throw err;
@@ -149,33 +175,24 @@ export function generateQRPayload(type, id, groupId = null) {
 
 /* ============================================================================
    🔹 Descargar el QR como imagen con su nombre (ej: QR007.png)
-   - Soporta base64 o URI directa desde ViewShot.capture()
 ============================================================================ */
 export async function downloadQRImage(data, code = "QR") {
   try {
     const fileUri = `${FileSystem.cacheDirectory}${code}.png`;
 
-    // 🔹 Detectar si el dato es Base64 o URI
-    if (data.startsWith("file://") || data.startsWith("data:image")) {
-      // Guardar usando la URI directa (ViewShot ya devuelve una ruta)
-      const sourceUri = data.startsWith("file://") ? data : fileUri;
-      if (data.startsWith("data:image")) {
-        await FileSystem.writeAsStringAsync(fileUri, data.replace(/^data:image\/png;base64,/, ""), {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-      }
-    } else {
-      // Si llega puro Base64 sin prefijo
-      await FileSystem.writeAsStringAsync(fileUri, data, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+    if (data.startsWith("data:image")) {
+      await FileSystem.writeAsStringAsync(
+        fileUri,
+        data.replace(/^data:image\/png;base64,/, ""),
+        { encoding: FileSystem.EncodingType.Base64 }
+      );
+    } else if (data.startsWith("file://")) {
+      await FileSystem.copyAsync({ from: data, to: fileUri });
     }
 
-    // 📤 Compartir el archivo (descargar / compartir)
     await Sharing.shareAsync(fileUri);
     console.log(`📤 QR descargado como ${code}.png`);
   } catch (err) {
     console.error("❌ Error al descargar QR:", err);
   }
 }
-
